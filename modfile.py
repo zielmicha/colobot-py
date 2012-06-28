@@ -2,6 +2,7 @@ import struct
 import collections
 import metafile
 import functools
+import os
 import Image
 import g3d
 from g3d import Vector3, Vector2
@@ -26,6 +27,11 @@ class Loader:
         for key in f.entries:
             self.index[key] = functools.partial(f.open, key)
 
+    def add_directory(self, path):
+        ' Add content of directory to index. '
+        for name in os.listdir(path):
+            self.index[name] = functools.partial(open, os.path.join(path, name), 'rb')
+            
     def get_model(self, name):
         '''
         Loads model named `name` from index using self._load_model.
@@ -57,10 +63,14 @@ class Loader:
         Also loads and attaches textures.
         '''
         l = []
+
+        def _uv((u, v)):
+            return Vector2(u, 1 - v)
+        
         for t in _load_modfile_data(input):
             texture = self.get_texture(t.tex_name)
             l.append(g3d.Triangle(
-                    t.a, t.b, t.c, t.na, t.nb, t.nc, t.a_uv, t.b_uv, t.c_uv,
+                    t.a, t.b, t.c, t.na, t.nb, t.nc, _uv(t.a_uv), _uv(t.b_uv), _uv(t.c_uv),
                     texture=texture
             ))
         return g3d.TriangleObject(l)

@@ -8,10 +8,11 @@ import modfile
 loader = modfile.Loader()
 loader.add_modfile('colobot.data/colobot1.dat')
 loader.add_modfile('colobot.data/colobot2.dat')
+loader.add_directory('colobot.data/diagram')
 
-model = loader.get_model('huston1.mod')
+model = loader.get_model(sys.argv[1])
 
-g3d.options.enable_textures = False
+g3d.options.enable_textures = True
 
 win = g3d.Window()
 win.root.add(model)
