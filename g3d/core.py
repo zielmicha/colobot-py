@@ -45,25 +45,29 @@ class TriangleObject(Object):
                 acum += l
             return acum
         
-        print len(grouped_by_texture), 'groups'
         self._grouped_by_texture = []
         for texture, triangles in grouped_by_texture:
             vertices = numpy.array(sum_seq([ [t.a[:], t.b[:], t.c[:]] for t in triangles ]))
             normals = numpy.array(sum_seq([ [t.na[:], t.nb[:], t.nc[:]] for t in triangles ]))
-            self._grouped_by_texture.append((texture, normals, vertices, None))
-        print 'done'
+            uv = numpy.array(sum_seq([ [t.a_uv[:], t.b_uv[:], t.c_uv[:]] for t in triangles ]))
+            assert len(vertices) == len(normals) == len(uv)
+            self._grouped_by_texture.append((texture, normals, vertices, uv))
             
     
-    def _draw_content(self):        
+    def _draw_content(self):
         glEnableClientState(GL_VERTEX_ARRAY)
         glEnableClientState(GL_NORMAL_ARRAY)
+        glEnableClientState(GL_TEXTURE_COORD_ARRAY)
         
         for texture, normal, vertex, uv in self._grouped_by_texture:
             if options.enable_textures and texture:
                 glBindTexture(GL_TEXTURE_2D, texture.get_id())
-                
-            glVertexPointerf( vertex )
-            glNormalPointerf( normal )
+            else:
+                glBindTexture(GL_TEXTURE_2D, 0)
+
+            glTexCoordPointer(2, GL_FLOAT, 0, uv)
+            glNormalPointer(GL_FLOAT, 0, normal)
+            glVertexPointer(3, GL_FLOAT, 0, vertex)
             glDrawArrays(GL_TRIANGLES, 0, len(vertex))
 
 
