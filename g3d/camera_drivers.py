@@ -1,12 +1,13 @@
 ' Camera drivers for interactive model viewing. '
 import g3d
+import g3d.gl
 import math
 
 from g3d import Vector2, Vector3, Quaternion
 
-class CameraDriver(g3d.EventHandler):
+class CameraDriver(g3d.gl.EventHandler):
     def __init__(self):
-        self.camera = g3d.Camera()
+        self.camera = g3d.gl.Camera()
     
     def install(self, window):
         window.camera = self.camera

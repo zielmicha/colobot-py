@@ -8,7 +8,7 @@ import g3d.terrain
 terrain = g3d.terrain.Terrain()
 terrain.load_from_relief(open(sys.argv[1]))
 
-win = g3d.Window()
+win = g3d.gl.Window()
 win.root.add(terrain.model)
 
 g3d.camera_drivers.LookAtCameraDriver().install(win)

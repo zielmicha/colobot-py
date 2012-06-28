@@ -55,7 +55,7 @@ class Loader:
         '''
         im = Image.open(input)
         data = im.tostring('raw', 'RGBX', 0, -1)
-        return g3d.create_rgbx_texture(data, im.size)
+        return g3d.gl.create_rgbx_texture(data, im.size)
             
     def _load_model(self, input):
         '''
