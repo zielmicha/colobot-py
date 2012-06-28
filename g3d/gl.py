@@ -1,10 +1,12 @@
 import g3d
 from g3d import Vector2, Vector3
 
-from OpenGL import GL, GLU, GLUT
+from OpenGL import GL, GLU
 from OpenGL.GL import *
 
 import numpy
+import pygame
+import time
 
 class Window:
     def __init__(self):
@@ -14,33 +16,38 @@ class Window:
 
     def loop(self):
         self._init()
-        GLUT.glutMainLoop()
+
+        pygame.display.set_mode((800, 640), pygame.HWSURFACE|pygame.OPENGL|pygame.DOUBLEBUF)
+        
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    return
+                if event.type in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP):
+                    self._mouse(event.button, event.type, *event.pos)
+                if event.type == pygame.MOUSEMOTION:
+                    self._motion(*event.pos)
+
+            self._display()
+            pygame.display.flip()
+            time.sleep(0.03)
 
     def redraw(self):
-        GLUT.glutPostRedisplay()
+        pass
         
     def _init(self):
-        GLUT.glutInit()
-        GLUT.glutInitWindowSize(640, 480)
-        GLUT.glutCreateWindow('3d')
-        GLUT.glutInitDisplayMode(GLUT.GLUT_SINGLE | GLUT.GLUT_RGB)
-        glClearColor(1, 1, 1, 1)
-        GLUT.glutDisplayFunc(self._display)
-        GLUT.glutMouseFunc(self._mouse)
-        GLUT.glutPassiveMotionFunc(self._motion)
-        GLUT.glutMotionFunc(self._motion)
-        GLUT.glutMouseWheelFunc(self._mouse_wheel)
-
+        pygame.init()
+        
     def _mouse(self, button, state, x, y):
-        if button == 3:
+        if button == 4:
             self.event_handler.mouse_wheel(1)
-        elif button == 4:
+        elif button == 5:
             self.event_handler.mouse_wheel(-1)
         else:
             pos = self._window_to_real(x, y)
-            if state == GLUT.GLUT_UP:
+            if state == pygame.MOUSEBUTTONUP:
                 self.event_handler.mouse_up(button, pos)
-            if state == GLUT.GLUT_DOWN:
+            if state == pygame.MOUSEBUTTONDOWN:
                 self.event_handler.mouse_down(button, pos)
         self.redraw()
 
@@ -56,6 +63,7 @@ class Window:
         self.redraw()
     
     def _display(self):
+        glClearColor(1, 1, 1, 1)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
         glEnable(GL_LIGHTING)
@@ -109,8 +117,8 @@ class Window:
 
 # ;;;;;;;;;;;;;;;;;;;; EVENTS ;;;;;;;;;;;;;;;;;;
         
-RIGHT_BUTTON = GLUT.GLUT_RIGHT_BUTTON
-LEFT_BUTTON  = GLUT.GLUT_LEFT_BUTTON
+RIGHT_BUTTON = 1
+LEFT_BUTTON  = 3
         
 class EventHandler:
     def motion(self, pos):
