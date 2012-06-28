@@ -1,5 +1,6 @@
+from __future__ import division
 # RULE: do not modify vector unless you know that no one else will use it
-from euclid import Vector3, Vector2
+from euclid import Vector3, Vector2, Quaternion
 import collections
 
 from OpenGL import GL, GLU, GLUT
@@ -107,12 +108,15 @@ class Camera:
         GLU.gluLookAt(self.eye.x, self.eye.y, self.eye.z,
                       self.center.x, self.center.y, self.center.z,
                       self.up.x, self.up.y, self.up.z)
+        distance = abs(self.eye - self.center)
+        scale = 1 / distance
+        glScale(scale, scale, scale)
     
 class Window:
     def __init__(self):
         self.root = Container()
         self.camera = Camera()
-        self.event_handler = None
+        self.event_handler = EventHandler()
 
     def loop(self):
         self._init()
@@ -131,24 +135,31 @@ class Window:
         GLUT.glutMouseFunc(self._mouse)
         GLUT.glutPassiveMotionFunc(self._motion)
         GLUT.glutMotionFunc(self._motion)
+        GLUT.glutMouseWheelFunc(self._mouse_wheel)
 
     def _mouse(self, button, state, x, y):
-        if self.event_handler:
+        if button == 3:
+            self.event_handler.mouse_wheel(1)
+        elif button == 4:
+            self.event_handler.mouse_wheel(-1)
+        else:
             pos = self._window_to_real(x, y)
             if state == GLUT.GLUT_UP:
                 self.event_handler.mouse_up(button, pos)
             if state == GLUT.GLUT_DOWN:
                 self.event_handler.mouse_down(button, pos)
-            self.redraw()
+        self.redraw()
 
     def _motion(self, x, y):
-        if self.event_handler:
-            self.event_handler.motion(self._window_to_real(x, y))
-            self.redraw()
+        self.event_handler.motion(self._window_to_real(x, y))
+        self.redraw()
 
     def _window_to_real(self, x, y):
         return Vector2(x, y)
 
+    def _mouse_wheel(self, button, dir, x, y):
+        self.event_handler.mouse_wheel(dir)
+        self.redraw()
     
     def _display(self):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -160,15 +171,14 @@ class Window:
         glEnable(GL_NORMALIZE)
                 
         glLightModelfv(GL_LIGHT_MODEL_AMBIENT, (0.2, 0.2, 0.2))
-        
+
         glMatrixMode(GL_PROJECTION)
+        #GLU.gluPerspective(90, 1, 0, 1000)
         glLoadIdentity()
         glOrtho(-2.0*64/48.0,2.0*64/48.0,-1.5, 1.5, 0.1, 100)
         
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
-
-        self.camera._setup()
         
         glClear(GL_COLOR_BUFFER_BIT)
         
@@ -183,9 +193,9 @@ class Window:
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
         glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL)
 
-        glScale(0.04, 0.04, 0.04)
+        self.camera._setup()
         self.root._draw()
-
+        
         glPopMatrix()
         glFlush()
 
@@ -200,4 +210,7 @@ class EventHandler:
         pass
 
     def mouse_up(self, button, pos):
+        pass
+
+    def mouse_wheel(self, dir):
         pass
