@@ -5,6 +5,7 @@ import collections
 
 from OpenGL import GL, GLU, GLUT
 from OpenGL.GL import *
+import numpy
 
 Triangle = collections.namedtuple('Triangle',
                                   'a b c na nb nc a_uv b_uv c_uv texture')
@@ -24,34 +25,47 @@ class Object(object):
         glPopMatrix()
 
 class TriangleObject(Object):
-    def __init__(self, triangles=None):
+    def __init__(self, triangles):
         super(TriangleObject, self).__init__()
-        self.triangles = triangles or []
+        
+        grouped_by_texture = []
+        curr_group = None
+        
+        last_tex = Ellipsis
+        for t in sorted(triangles, key=lambda t: t.texture):
+            if t.texture != last_tex:
+                curr_group = []
+                grouped_by_texture.append((t.texture, curr_group))
+                last_tex = t.texture
+            curr_group.append(t)
+
+        def sum_seq(it):
+            acum = []
+            for l in it:
+                acum += l
+            return acum
+        
+        print len(grouped_by_texture), 'groups'
+        self._grouped_by_texture = []
+        for texture, triangles in grouped_by_texture:
+            vertices = numpy.array(sum_seq([ [t.a[:], t.b[:], t.c[:]] for t in triangles ]))
+            normals = numpy.array(sum_seq([ [t.na[:], t.nb[:], t.nc[:]] for t in triangles ]))
+            self._grouped_by_texture.append((texture, normals, vertices, None))
+        print 'done'
+            
     
-    def _draw_content(self):
-        for t in self.triangles:
-            texture = t.texture
+    def _draw_content(self):        
+        glEnableClientState(GL_VERTEX_ARRAY)
+        glEnableClientState(GL_NORMAL_ARRAY)
+        
+        for texture, normal, vertex, uv in self._grouped_by_texture:
             if options.enable_textures and texture:
                 glBindTexture(GL_TEXTURE_2D, texture.get_id())
-
-            glBegin(GL_TRIANGLES)
                 
-            glNormal(t.na.x, t.na.y, t.na.z)
-            if texture:
-                glTexCoord(t.a_uv.x, t.a_uv.y)
-            glVertex(t.a.x, t.a.y, t.a.z)
+            glVertexPointerf( vertex )
+            glNormalPointerf( normal )
+            glDrawArrays(GL_TRIANGLES, 0, len(vertex))
 
-            glNormal(t.nb.x, t.nb.y, t.nb.z)
-            if texture:
-                glTexCoord(t.b_uv.x, t.b_uv.y)
-            glVertex(t.b.x, t.b.y, t.b.z)
-
-            glNormal(t.nc.x, t.nc.y, t.nc.z)
-            if texture:
-                glTexCoord(t.c_uv.x, t.c_uv.y)
-            glVertex(t.c.x, t.c.y, t.c.z)
-
-            glEnd()
 
 class Container(Object):
     def __init__(self):

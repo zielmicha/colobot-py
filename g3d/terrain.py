@@ -29,7 +29,8 @@ class Terrain(object):
 
         def _create_triangle(a, b, c):
             normal = (a - b).cross(c - a).normalized()
-            return g3d.Triangle(a, b, c, normal, normal, normal, None, None, None, None)
+            nil = Vector2()
+            return g3d.Triangle(a, b, c, normal, normal, normal, nil, nil, nil, None)
         
         triangles = []
         for y in xrange(0, len(self.heights) - 1):
