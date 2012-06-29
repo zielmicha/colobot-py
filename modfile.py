@@ -68,7 +68,10 @@ class Loader:
             return Vector2(u, 1 - v)
         
         for t in _load_modfile_data(input):
-            texture = self.get_texture(t.tex_name)
+            if t.tex_name:
+                texture = self.get_texture(t.tex_name)
+            else:
+                texture = None
             l.append(g3d.Triangle(
                     t.a, t.b, t.c, t.na, t.nb, t.nc, _uv(t.a_uv), _uv(t.b_uv), _uv(t.c_uv),
                     texture=texture

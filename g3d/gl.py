@@ -86,7 +86,7 @@ class Window:
 
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
-        glFrustum(-1, 1, -1, 1, 5, 100)
+        glFrustum(-1, 1, -1, 1, 5, 5000)
         
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()

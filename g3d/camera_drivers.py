@@ -16,7 +16,7 @@ class CameraDriver(g3d.gl.EventHandler):
 
 class LookAtCameraDriver(CameraDriver):
     ''' Camera is on sphere with object in its center, always pointed on it. '''
-    def __init__(self, radius=15, look_at=Vector3(0, 0, 0)):
+    def __init__(self, radius=35, look_at=Vector3(0, 0, 0)):
         CameraDriver.__init__(self)
         self.radius = radius
         self.last_pos = None
@@ -55,7 +55,7 @@ class LookAtCameraDriver(CameraDriver):
         self.last_pos = None
 
     def mouse_wheel(self, dir):
-        const = 1.5
+        const = 1.1
         if dir == -1:
             self.radius *= const
         else:
