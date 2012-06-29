@@ -13,6 +13,7 @@ class Window:
         self.root = g3d.Container()
         self.camera = Camera()
         self.event_handler = EventHandler()
+        self.timer = g3d.Timer() # UI timer
 
     def loop(self):
         self._init()
@@ -23,13 +24,16 @@ class Window:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     return
-                if event.type in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP):
+                elif event.type in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP):
                     self._mouse(event.button, event.type, *event.pos)
-                if event.type == pygame.MOUSEMOTION:
+                elif event.type == pygame.MOUSEMOTION:
                     self._motion(*event.pos)
+                elif event.type in (pygame.KEYDOWN, pygame.KEYUP):
+                    self._key(event.type, event.key)
 
             self._display()
             pygame.display.flip()
+            self.timer.tick()
             time.sleep(0.03)
 
     def redraw(self):
@@ -37,7 +41,13 @@ class Window:
         
     def _init(self):
         pygame.init()
-        
+
+    def _key(self, state, key):
+        if state == pygame.KEYUP:
+            self.event_handler.key_up(key)
+        elif state == pygame.KEYDOWN:
+            self.event_handler.key_down(key)
+    
     def _mouse(self, button, state, x, y):
         if button == 4:
             self.event_handler.mouse_wheel(1)
@@ -75,9 +85,8 @@ class Window:
         glLightModelfv(GL_LIGHT_MODEL_AMBIENT, (0.2, 0.2, 0.2))
 
         glMatrixMode(GL_PROJECTION)
-        #GLU.gluPerspective(90, 1, 0, 1000)
         glLoadIdentity()
-        glOrtho(-2.0*64/48.0,2.0*64/48.0,-1.5, 1.5, 0.1, 100)
+        glFrustum(-1, 1, -1, 1, 5, 100)
         
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
@@ -119,7 +128,12 @@ class Window:
         
 RIGHT_BUTTON = 1
 LEFT_BUTTON  = 3
-        
+
+class Keys:
+    pass
+
+Keys.__dict__.update(pygame.__dict__)
+
 class EventHandler:
     def motion(self, pos):
         pass
@@ -131,6 +145,12 @@ class EventHandler:
         pass
 
     def mouse_wheel(self, dir):
+        pass
+
+    def key_up(self, key):
+        pass
+
+    def key_down(self, key):
         pass
 
 # ;;;;;;;;;;;;;;;;;;; CAMERA ;;;;;;;;;;;;;;;;;;;
@@ -145,9 +165,7 @@ class Camera:
         GLU.gluLookAt(self.eye.x, self.eye.y, self.eye.z,
                       self.center.x, self.center.y, self.center.z,
                       self.up.x, self.up.y, self.up.z)
-        distance = abs(self.eye - self.center)
-        scale = 1 / distance
-        glScale(scale, scale, scale)
+        
 
 # ;;;;;;;;;;;;;;;;; RENDERERS ;;;;;;;;;;;;;;;;;;
         

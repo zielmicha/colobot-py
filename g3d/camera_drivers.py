@@ -4,6 +4,7 @@ import g3d.gl
 import math
 
 from g3d import Vector2, Vector3, Quaternion
+from g3d.gl import Keys
 
 class CameraDriver(g3d.gl.EventHandler):
     def __init__(self):
@@ -61,3 +62,48 @@ class LookAtCameraDriver(CameraDriver):
             self.radius /= const
 
         self._update()
+
+
+class FreeCameraDriver(CameraDriver):
+    def __init__(self):
+        CameraDriver.__init__(self)
+        self.camera.eye = Vector3(0, 0, 0)
+        self.camera.up = Vector3(0, 0, 1)
+        self.speed = Vector3(0, 0, 0)
+        self.angular_speed = 0
+        self.angle = 0
+        
+        self._update()
+
+    def _update(self):
+        direction = Quaternion.new_rotate_axis(self.angle, Vector3(0, 0, 1)) * Vector3(1, 0, 0)
+        self.camera.center = self.camera.eye + direction
+
+    def install(self, window):
+        CameraDriver.install(self, window)
+        window.timer.add_ticker(self.tick)
+
+    def tick(self, elapsed):
+        self.angle += self.angular_speed * elapsed
+        self.camera.eye += Quaternion.new_rotate_axis(self.angle, Vector3(0, 0, 1)) * self.speed * elapsed
+        
+        self._update()
+        
+    def key_down(self, key):
+        if key in (Keys.K_LEFT, Keys.K_RIGHT):
+            self.angular_speed = (1 if key == Keys.K_LEFT else -1) * 0.1
+        dirs = {
+            Keys.K_UP: Vector3(1, 0, 0),
+            Keys.K_DOWN: Vector3(-1, 0, 0),
+            Keys.K_RSHIFT: Vector3(0, 0, 1),
+            Keys.K_RCTRL: Vector3(0, 0, -1),
+            Keys.K_LSHIFT: Vector3(0, 0, 1),
+            Keys.K_LCTRL: Vector3(0, 0, -1),
+        }
+        direction = dirs.get(key)
+        if direction:
+            self.speed = direction
+        
+    def key_up(self, key):
+        self.speed = Vector3()
+        self.angular_speed = 0

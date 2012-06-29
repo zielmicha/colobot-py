@@ -2,6 +2,7 @@ from __future__ import division
 # RULE: do not modify vector unless you know that no one else will use it
 from euclid import Vector3, Vector2, Quaternion
 import collections
+import time
 
 Triangle = collections.namedtuple('Triangle',
                                   'a b c na nb nc a_uv b_uv c_uv texture')
@@ -38,6 +39,34 @@ class Container(Object):
     def remove(self, obj):
         self.objects.remove(obj)
 
+class Timer:
+    def __init__(self):
+        self._intervals = []
+        self._tickers = []
+        self._last_tick = None
+
+    def tick(self):
+        current = time.time()
+        for func in self._intervals:
+            if func[1] > current:
+                func[0]()
+                func[1] += func[2]
+
+        if self._last_tick:
+            delta = current - self._last_tick
+            for ticker in self._tickers:
+                ticker(delta)
+
+        self._last_tick = current
+    
+    def add_interval(self, interval, function):
+        ''' Adds a function that will be called in regular intervals. '''
+        self._functions.append([function, time.time() + interval, interval])
+
+    def add_ticker(self, function):
+        ''' Adds a function that will be called each tick with one argument - time elapsed from last call in seconds. '''
+        self._tickers.append(function)
+        
 def wrap(obj):
     ' Wraps object with a container, so its position can be changed without modifing it. '
     c = Container()

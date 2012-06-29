@@ -11,7 +11,7 @@ terrain.load_from_relief(open(sys.argv[1]))
 win = g3d.gl.Window()
 win.root.add(terrain.model)
 
-g3d.camera_drivers.LookAtCameraDriver().install(win)
+g3d.camera_drivers.FreeCameraDriver().install(win)
 
 win.loop()
 
