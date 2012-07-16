@@ -27,7 +27,7 @@
 from __future__ import division
 
 import g3d
-import Image
+import pygame
 
 from g3d import Vector2, Vector3
 
@@ -38,13 +38,12 @@ class Terrain(object):
         self.model = None
 
     def load_from_relief(self, file, height=2):
-        im = Image.open(file)
-        pix = im.load()
-        for x in xrange(im.size[0]):
+        im = pygame.image.load(file)
+        for x in xrange(im.get_width()):
             row = []
             self.heights.append(row)
-            for y in xrange(im.size[1]):
-                val = pix[x, y]
+            for y in xrange(im.get_height()):
+                val = im.get_at((x, y))[0]
                 row.append(val * height / 256)
         self._update_model()
 

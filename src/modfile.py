@@ -21,7 +21,7 @@ import collections
 import metafile
 import functools
 import os
-import Image
+import pygame
 import gzip
 import g3d
 from g3d import Vector3, Vector2
@@ -74,17 +74,19 @@ class Loader:
     def _find_texture(self, name):
         if name in self.index:
             return name
-        # original Colobot are .tga files, but .png is better
-        if name.endswith('.tga') and (name[:-4] + '.png') in self.index:
+        # original Colobot are .tga and .bmp files, but .png is better
+        if name.endswith(('.tga', '.bmp')) and (name[:-4] + '.png') in self.index:
             return name[:-4] + '.png'
+
+        raise KeyError(name)
     
     def _load_texture(self, input):
         '''
         Creates GL texture from image supported by PIL and returns its g3d.TextureWrapper.
         '''
-        im = Image.open(input)
-        data = im.tostring('raw', 'RGBX', 0, -1)
-        return g3d.gl.create_rgbx_texture(data, im.size)
+        im = pygame.image.load(input)
+        data = pygame.image.tostring(im, 'RGBX', True)
+        return g3d.gl.create_rgbx_texture(data, im.get_size())
             
     def _load_model(self, input):
         '''
