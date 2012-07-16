@@ -18,41 +18,20 @@
 
 import struct
 import collections
-import metafile
-import functools
-import os
 import pygame
-import gzip
 import g3d
+import g3d.loader
 from g3d import Vector3, Vector2
 
 # ;;;;;;;;;;;;;;;; PUBLIC API ;;;;;;;;;;;;;;;;;
 
-class Loader:
+class Loader(g3d.loader.Loader):
     '''
-    Manages loading textures and .mod files from Colobot .dat files.
+    Manages loading textures and Colobot .mod files.
     '''
     def __init__(self):
+        super(Loader, self).__init__()
         self.texture_cache = {}
-        self.index = {}
-
-    def add_modfile(self, path_or_modfile):
-        ' Add content of Colobot .dat file to index. '
-        if type(path_or_modfile) == str:
-            f = metafile.MetaFile(metafile.cipher_keys['full'], open(path_or_modfile, 'rb'))
-        else:
-            f = path_or_modfile
-
-        for key in f.entries:
-            self.index[key] = functools.partial(f.open, key)
-
-    def add_directory(self, path):
-        ' Add content of directory to index. '
-        for name in os.listdir(path):
-            if name.endswith('.gz'):
-                self.index[name[:-3]] = functools.partial(gzip.open, os.path.join(path, name), 'rb')
-            else:
-                self.index[name] = functools.partial(open, os.path.join(path, name), 'rb')
             
     def get_model(self, name):
         '''
