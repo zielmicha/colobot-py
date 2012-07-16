@@ -39,6 +39,7 @@ class options(object):
 class Object(object):
     def __init__(self):
         self.pos = Vector3()
+        self.rotation = Quaternion()
 
 class TriangleObject(Object):
     def __init__(self, triangles):
@@ -74,7 +75,7 @@ class Timer:
     def tick(self):
         current = time.time()
         for func in self._intervals:
-            if func[1] > current:
+            if func[1] < current:
                 func[0]()
                 func[1] += func[2]
 
@@ -86,8 +87,8 @@ class Timer:
         self._last_tick = current
     
     def add_interval(self, interval, function):
-        ''' Adds a function that will be called in regular intervals. '''
-        self._functions.append([function, time.time() + interval, interval])
+        ''' Adds a function that will be called in regular intervals (in seconds). '''
+        self._intervals.append([function, time.time() + interval, interval])
 
     def add_ticker(self, function):
         ''' Adds a function that will be called each tick with one argument - time elapsed from last call in seconds. '''

@@ -141,6 +141,7 @@ class Window:
 
         glPushMatrix()
         glTranslate(obj.pos.x, obj.pos.y, obj.pos.z)
+        glMultMatrixd(obj.rotation.get_matrix()[:])
         
         if isinstance(obj, g3d.TriangleObject):
             TrianglesRenderer.get(obj).draw_content()
