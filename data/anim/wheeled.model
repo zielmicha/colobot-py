@@ -1,0 +1,7 @@
+part model=lem1w.mod name=wheeled_body
+
+group name=wheels
+      part model=lem2w.mod translate=-3,1,-3
+      part model=lem2w.mod translate=-3,1,3  rotate=0,180,0
+      part model=lem2w.mod translate=2,1,-3
+      part model=lem2w.mod translate=2,1,3   rotate=0,180,0

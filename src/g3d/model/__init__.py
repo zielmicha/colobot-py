@@ -24,26 +24,23 @@
 # THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-import os
-import gzip
-import functools
 
-class Loader(object):
+import g3d
+from g3d import Vector2, Vector3, Quaternion
+
+class Model:
+    '''
+    Model represents an object - it consists of:
+    - parts (immutable g3d.TriangleObjects),
+    - animations (g3d.model.Animation - describes transformations of parts).
+    Parts are grouped (using g3d.Container) to make applying transformations easier.
+    '''
     def __init__(self):
-        self.index = {}
-    
-    def add_directory(self, path):
-        ' Add content of directory to index. '
-        for name in os.listdir(path):
-            if name.endswith('.gz'):
-                self.index[name[:-3]] = functools.partial(gzip.open, os.path.join(path, name), 'rb')
-            else:
-                self.index[name] = functools.partial(open, os.path.join(path, name), 'rb')
+        self.root = g3d.Container()
+        self.animations = {}
+        self.objects = {}
 
-    def read_file(self, name):
-        return self.index[name]().read()
-                
-    def _load_model(self, input):
-        ''' Loads model from input and returns g3d.TriangleObject
-        - should be overriden by subclasses. '''
-        raise NotImplementedError
+    def clone(self):
+        pass # TODO
+
+    
