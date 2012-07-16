@@ -8,9 +8,9 @@ import g3d.camera_drivers
 import modfile
 
 loader = modfile.Loader()
-loader.add_modfile('colobot.data/colobot1.dat')
-loader.add_modfile('colobot.data/colobot2.dat')
-loader.add_directory('colobot.data/diagram')
+loader.add_directory('data/models')
+loader.add_directory('data/diagram')
+loader.add_directory('data/textures')
 
 model = loader.get_model(sys.argv[1])
 

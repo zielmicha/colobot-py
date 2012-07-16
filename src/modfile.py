@@ -22,6 +22,7 @@ import metafile
 import functools
 import os
 import Image
+import gzip
 import g3d
 from g3d import Vector3, Vector2
 
@@ -48,7 +49,10 @@ class Loader:
     def add_directory(self, path):
         ' Add content of directory to index. '
         for name in os.listdir(path):
-            self.index[name] = functools.partial(open, os.path.join(path, name), 'rb')
+            if name.endswith('.gz'):
+                self.index[name[:-3]] = functools.partial(gzip.open, os.path.join(path, name), 'rb')
+            else:
+                self.index[name] = functools.partial(open, os.path.join(path, name), 'rb')
             
     def get_model(self, name):
         '''
@@ -62,11 +66,18 @@ class Loader:
         If texture was loaded yet, returns it from cache.
         '''
         if name not in self.texture_cache:
-            input = self.index[name]()
+            input = self.index[self._find_texture(name)]()
             self.texture_cache[name] = self._load_texture(input)
 
         return self.texture_cache[name]
 
+    def _find_texture(self, name):
+        if name in self.index:
+            return name
+        # original Colobot are .tga files, but .png is better
+        if name.endswith('.tga') and (name[:-4] + '.png') in self.index:
+            return name[:-4] + '.png'
+    
     def _load_texture(self, input):
         '''
         Creates GL texture from image supported by PIL and returns its g3d.TextureWrapper.
