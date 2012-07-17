@@ -28,10 +28,7 @@ from g3d import Vector3, Vector2
 class Loader(g3d.loader.Loader):
     '''
     Manages loading textures and Colobot .mod files.
-    '''
-    def __init__(self):
-        super(Loader, self).__init__()
-            
+    '''     
     def _find_texture(self, name):
         if name in self.index:
             return name
@@ -64,7 +61,7 @@ class Loader(g3d.loader.Loader):
 
 # ;;;;;;;;;;;;;;; IMPLEMENTATION ;;;;;;;;;;;;;;;
 
-_Triangle = collections.namedtuple('Triangle',
+_Triangle = collections.namedtuple('_Triangle',
                                   'a b c na nb nc a_uv b_uv c_uv tex_name '
                                   'min max state tex_num')
 

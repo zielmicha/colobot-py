@@ -32,7 +32,10 @@ import pygame
 import g3d
 
 class Loader(object):
-    def __init__(self):
+    def __init__(self, enable_textures=True):
+        if enable_textures:
+            import g3d.gl
+        self.enable_textures = enable_textures
         self.index = {}
         self.texture_cache = {}
         self.model_cache = {}
@@ -61,7 +64,11 @@ class Loader(object):
         '''
         Loads texture named `name` from index using self._load_texture.
         If texture was loaded yet, returns it from cache.
+        Returns None if texture loading is disabled.
         '''
+        if not self.enable_textures:
+            return None
+        
         if name not in self.texture_cache:
             input = self.index[self._find_texture(name)]()
             self.texture_cache[name] = self._load_texture(input)
