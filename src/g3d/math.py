@@ -1,12 +1,256 @@
-from __future__ import absolute_import
-from euclid import Vector3, Vector2, Quaternion
+# Copyright (c) 2012, Michal Zielinski <michal@zielinscy.org.pl>
+# All rights reserved.
+# 
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are
+# met:
+# 
+#     * Redistributions of source code must retain the above copyright
+#     notice, this list of conditions and the following disclaimer.
+# 
+#     * Redistributions in binary form must reproduce the above
+#     copyright notice, this list of conditions and the following
+#     disclaimer in the documentation and/or other materials provided
+#     with the distribution.
+# 
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+# HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from math import sin, cos, pi
+''' Interface inspired on PyEuclid, but it is on GPL. '''
 
-# monkey-patch pyeuclid
+from __future__ import absolute_import, division
 
-def quaternion_inversed(self):
-    m = abs(self * self.conjugated())
-    return self.conjugated() * Quaternion(1. / m, 0, 0, 0)
+from math import sin, cos, pi, acos, asin, tan, atan
 
-Quaternion.inversed = quaternion_inversed
+class Vector2(object):
+    def __init__(self, x=0, y=0):
+        self.x = x
+        self.y = y
+
+    def __eq__(self, o):
+        if not isinstance(o, Vector2): return False
+        return self.x == o.x and self.y == o.y
+
+    def __hash__(self):
+        return hash((self.x, self.y))
+        
+    def __add__(self, other):
+        assert isinstance(other, Vector2)
+        return Vector2(self.x + other.x, self.y + other.y)
+
+    def __sub__(self, other):
+        assert isinstance(other, Vector2)
+        return Vector2(self.x - other.x, self.y - other.y)
+
+    def __repr__(self):
+        return 'Vector2(%.2f, %.2f)' % (self.x, self.y)
+
+    def __iter__(self):
+        return iter([self.x, self.y])
+    
+    def __getitem__(self, i):
+        return [self.x, self.y][i]
+
+class Vector3(object):
+    def __init__(self, x=0, y=0, z=0):
+        self.x = x
+        self.y = y
+        self.z = z
+
+    def normalized(self):
+        l = abs(self)
+        return Vector3(self.x / l, self.y / l, self.z / l)
+
+    def cross(self, other):
+        return Vector3(self.y * other.z - self.z * other.y,
+                       self.z * other.x - self.x * other.z,
+                       self.x * other.y - self.y * other.x)
+
+    def __mul__(self, a):
+        assert isinstance(a, float)
+        return Vector3(self.x * a, self.y * a, self.z * a)
+    
+    def __eq__(self, o):
+        if not isinstance(o, Vector3): return False
+        return self.x == o.x and self.y == o.y and self.z == o.z
+
+    def __hash__(self):
+        return hash((self.x, self.y, self.z))
+        
+    def __repr__(self):
+        return 'Vector3(%.2f, %.2f, %.2f)' % (self.x, self.y, self.z)
+        
+    def __add__(self, other):
+        assert isinstance(other, Vector3)
+        return Vector3(self.x + other.x, self.y + other.y, self.z + other.z)
+
+    def __sub__(self, other):
+        assert isinstance(other, Vector3)
+        return Vector3(self.x - other.x, self.y - other.y, self.z - other.z)
+
+    def __abs__(self):
+        return (self.x**2 + self.y**2 + self.z**2)**0.5
+
+    def __iter__(self):
+        return iter([self.x, self.y, self.z])
+
+    def __getitem__(self, i):
+        return [self.x, self.y, self.z][i]
+
+class Quaternion(object):
+    def __init__(self, w=1, x=0, y=0, z=0):
+        self.w = w
+        self.x = x
+        self.y = y
+        self.z = z
+
+    def __repr__(self):
+        return 'Quaternion(real=%.2f, imag=<%.2f, %.2f, %.2f>)' % (
+            self.w, self.x, self.y, self.z)
+
+    def get_matrix(self):
+        xx = self.x * self.x
+        xy = self.x * self.y
+        xz = self.x * self.z
+        xw = self.x * self.w
+        
+        yy = self.y * self.y
+        yz = self.y * self.z
+        yw = self.y * self.w
+        
+        zz = self.z * self.z
+        zw = self.z * self.w
+        
+        tmp = [ # that's in row major
+            1 - 2 * (yy + zz),  # a
+            2 * (xy - zw),      # b
+            2 * (xz + yw),      # c
+            0,                  # d
+            2 * (xy + zw),      # e
+            1 - 2 * (xx + zz),  # f 
+            2 * (yz - xw),      # g
+            0,                  # h
+            2 * (xz - yw),      # i
+            2 * (yz + xw),      # j
+            1 - 2 * (xx + yy),  # k
+            0, # l
+            0, # m
+            0, # n
+            0, # o
+            1, # p
+            ]
+        return [ tmp[0], tmp[4], tmp[8], tmp[12], # and in column major that opengl wants
+                 tmp[1], tmp[5], tmp[9], tmp[13],
+                 tmp[2], tmp[6], tmp[10], tmp[14],
+                 tmp[3], tmp[7], tmp[11], tmp[15]]
+
+    def get_angle_axis(self):
+        q = self.normalized()
+        angle1 = 2 * acos(q.w)
+        angle2 = (1 - q.w ** 2) ** 0.5
+        return angle1, Vector3(q.x / angle2, q.y / angle2, q.z / angle2)
+    
+    @classmethod
+    def from_vector3(self, vec):
+        return Quaternion(0, vec.x, vec.y, vec.z)
+
+    def to_vector3(self):
+        return Vector3(self.x, self.y, self.z)
+    
+    def normalized(self):
+        l = abs(self)
+        return Quaternion(self.w/l, self.x/l, self.y/l, self.z/l)
+
+    def conjugated(self):
+        return Quaternion(self.w, -self.x, -self.y, -self.z)
+    
+    def inversed(self):
+        m = abs(self * self.conjugated())
+        return self.conjugated() * Quaternion(1. / m, 0, 0, 0)
+
+    def __add__(self, other):
+        assert isinstance(other, Quaternion)
+        return Quaternion(self.w + other.w,
+                          self.x + other.x,
+                          self.y + other.y,
+                          self.z + other.z)
+
+    
+    def __sub__(self, other):
+        assert isinstance(other, Quaternion)
+        return Quaternion(self.w - other.w,
+                          self.x - other.x,
+                          self.y - other.y,
+                          self.z - other.z)
+    
+    def __mul__(self, other):
+        if isinstance(other, Quaternion):
+            return Quaternion(
+                -self.x * other.x - self.y * other.y - self.z * other.z + self.w * other.w,
+                 self.x * other.w + self.y * other.z - self.z * other.y + self.w * other.x,    
+                -self.x * other.z + self.y * other.w + self.z * other.x + self.w * other.y,
+                 self.x * other.y - self.y * other.x + self.z * other.w + self.w * other.z)
+        elif isinstance(other, Vector3):
+            return (self * Quaternion.from_vector3(other)).to_vector3()
+        elif isinstance(other, float):
+            return Quaternion(self.w * other, self.x * other, self.y * other, self.z * other)
+        else:
+            return NotImplemented
+
+    def __abs__(self):
+        return (self.x**2 + self.y**2 + self.z**2 + self.w**2) ** 0.5
+
+    @classmethod
+    def new_rotate_axis(cls, angle, axis):
+        axis = axis.normalized()
+        Sin = sin(angle / 2)
+        Cos = cos(angle / 2)
+        return Quaternion(Cos, axis.x * Sin, axis.y * Sin, axis.z * Sin)
+    
+    @classmethod
+    def new_rotate_euler(cls, heading, attitude, bank):
+        Hc = cos(heading / 2)
+        Hs = sin(heading / 2)
+        Ac = cos(attitude / 2)
+        As = sin(attitude / 2)
+        Bc = cos(bank / 2)
+        Bs = sin(bank / 2)
+
+        return cls(Hc * Ac * Bc - Hs * As * Bs,
+                   Hs * As * Bc + Hc * Ac * Bs,
+                   Hs * Ac * Bc + Hc * As * Bs,
+                   Hc * As * Bc - Hs * Ac * Bs)
+
+    @classmethod
+    def new_interpolate(cls, q1, q2, t):
+        # http://number-none.com/product/Understanding%20Slerp,%20Then%20Not%20Using%20It/
+        q1 = q1.normalized()
+        q2 = q2.normalized()
+        
+        dot = q1.w * q2.w + q1.x * q2.x + q1.y * q2.y + q1.z * q2.z
+        if dot > 0.9995:
+            return q1 + t * (q1 - q2)
+
+        if dot < 0:
+            # we don't want to rotate "the longer way"
+            q1 = q1.conjugated()
+            dot *= -1
+
+        if dot > 1:
+            # or acos may raise MathError
+            dot = 1
+
+        theta_0 = acos(dot)
+        theta = theta_0 * t
+        q3 = (q2 - q1 * dot).normalized()
+        
+        return q1 * cos(theta) + q3 * sin(theta)
