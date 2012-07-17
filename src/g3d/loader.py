@@ -27,10 +27,15 @@
 import os
 import gzip
 import functools
+import pygame
+
+import g3d
 
 class Loader(object):
     def __init__(self):
         self.index = {}
+        self.texture_cache = {}
+        self.model_cache = {}
     
     def add_directory(self, path):
         ' Add content of directory to index. '
@@ -42,8 +47,42 @@ class Loader(object):
 
     def read_file(self, name):
         return self.index[name]().read()
-                
+
+    def get_model(self, name):
+        '''
+        Loads model named `name` from index using self._load_model.
+        '''
+        if name not in self.model_cache:
+            self.model_cache[name] = self._load_model(self.index[name]())
+        
+        return self.model_cache[name]
+    
+    def get_texture(self, name):
+        '''
+        Loads texture named `name` from index using self._load_texture.
+        If texture was loaded yet, returns it from cache.
+        '''
+        if name not in self.texture_cache:
+            input = self.index[self._find_texture(name)]()
+            self.texture_cache[name] = self._load_texture(input)
+
+        return self.texture_cache[name]
+
+    def _find_texture(self, name):
+        if name in self.index:
+            return name
+
+        raise KeyError(name)
+    
+    def _load_texture(self, input):
+        '''
+        Creates GL texture from image supported by Pygame and returns its g3d.TextureWrapper.
+        '''
+        im = pygame.image.load(input)
+        data = pygame.image.tostring(im, 'RGBX', True)
+        return g3d.gl.create_rgbx_texture(data, im.get_size())
+    
     def _load_model(self, input):
         ''' Loads model from input and returns g3d.TriangleObject
         - should be overriden by subclasses. '''
-        raise NotImplementedError
+        raise NotImplementedError('should be overriden by subclass')

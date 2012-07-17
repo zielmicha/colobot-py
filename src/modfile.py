@@ -31,25 +31,7 @@ class Loader(g3d.loader.Loader):
     '''
     def __init__(self):
         super(Loader, self).__init__()
-        self.texture_cache = {}
             
-    def get_model(self, name):
-        '''
-        Loads model named `name` from index using self._load_model.
-        '''
-        return self._load_model(self.index[name]())
-
-    def get_texture(self, name):
-        '''
-        Loads texture named `name` from index using self._load_texture.
-        If texture was loaded yet, returns it from cache.
-        '''
-        if name not in self.texture_cache:
-            input = self.index[self._find_texture(name)]()
-            self.texture_cache[name] = self._load_texture(input)
-
-        return self.texture_cache[name]
-
     def _find_texture(self, name):
         if name in self.index:
             return name
@@ -58,15 +40,7 @@ class Loader(g3d.loader.Loader):
             return name[:-4] + '.png'
 
         raise KeyError(name)
-    
-    def _load_texture(self, input):
-        '''
-        Creates GL texture from image supported by PIL and returns its g3d.TextureWrapper.
-        '''
-        im = pygame.image.load(input)
-        data = pygame.image.tostring(im, 'RGBX', True)
-        return g3d.gl.create_rgbx_texture(data, im.get_size())
-            
+        
     def _load_model(self, input):
         '''
         Loads Colobot model from input and returns g3d.TriangleObject.

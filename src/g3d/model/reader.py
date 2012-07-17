@@ -43,7 +43,8 @@ def _load_group(loader, tree, model, group):
             name, = _get_options(options, 'name')
             read_into(loader, name, model, group)
         elif command == 'part':
-            pass # TODO
+            name, translate, rotate = _get_options(options, 'name', 'translate', 'rotate')
+            loader.get_model(name)
         else:
             raise SyntaxError('invalid command %s' % command)
 
