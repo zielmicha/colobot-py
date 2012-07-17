@@ -5,19 +5,32 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 import g3d
 import g3d.gl
 import g3d.camera_drivers
+import g3d.model
 import modfile
 
 loader = modfile.Loader()
 loader.add_directory('data/models')
+loader.add_directory('data/anim')
 loader.add_directory('data/diagram')
 loader.add_directory('data/textures')
 
-model = loader.get_model(sys.argv[1])
+name = sys.argv[1]
+if name.endswith('.mod'):
+    obj = loader.get_model(name)
+else:
+    model = g3d.model.read(loader=loader, name=name)
+    obj = model.root
 
 g3d.options.enable_textures = True
 
 win = g3d.gl.Window()
-win.root.add(model)
+win.root.add(obj)
+
+def rotate():
+    rot = g3d.Quaternion.new_rotate_axis(3.14 / 180 * 5, g3d.Vector3(0, 1, 0))
+    win.root.rotation = win.root.rotation * rot
+
+win.timer.add_interval(0.1, rotate)
 
 g3d.camera_drivers.LookAtCameraDriver().install(win)
 

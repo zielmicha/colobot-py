@@ -27,6 +27,7 @@
 
 import g3d
 from g3d import Vector2, Vector3, Quaternion
+from g3d.model.reader import read
 
 class Model:
     '''

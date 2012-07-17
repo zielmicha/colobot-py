@@ -25,29 +25,78 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import math
+import g3d
 import g3d.model
+
+from g3d import Vector2, Vector3, Quaternion
 
 def read(loader, name):
     model = g3d.model.Model()
     read_into(loader, name, model, model.root)
+    return model
 
 def read_into(loader, name, model, group):
     data = loader.read_file(name)
     _load_group(loader, _parse(data), model, group)
 
 def _load_group(loader, tree, model, group):
+    def handle_part():
+        model_name, name, translate, rotate = _get_options(options, 'model', 'name', 'translate', 'rotate')
+        obj = g3d.wrap(loader.get_model(model_name))
+        group.add(obj)
+        _bind_trans(obj, translate, rotate)
+        if name:
+            model.objects[name] = obj
+
+    def handle_include():
+        name, = _get_options(options, 'name')
+        read_into(loader, name, model, group)
+
+    def handle_group():
+        name, translate, rotate = _get_options(options, 'name', 'translate', 'rotate')
+        obj = g3d.Container()
+        _bind_trans(obj, translate, rotate)
+        _load_group(loader, children, model, obj)
+        if name:
+            model.objects[name] = obj
+        
+    def assert_no_children():
+        if children:
+            raise SyntaxError('command %s shouldn\'t have any children' % command)
+
+    def assert_has_children():
+        if not children:
+            raise SyntaxError('command %s should have at least one child' % command)
+        
     for item, children in tree:
         command, options = _parse_line(item)
 
         if command == 'include':
-            name, = _get_options(options, 'name')
-            read_into(loader, name, model, group)
+            assert_no_children()
+            handle_include()
         elif command == 'part':
-            name, translate, rotate = _get_options(options, 'name', 'translate', 'rotate')
-            loader.get_model(name)
+            assert_no_children()
+            handle_part()
+        elif command == 'group':
+            assert_has_children()
+            handle_group()
         else:
             raise SyntaxError('invalid command %s' % command)
 
+def _bind_trans(obj, translate, rotate):
+    def _float_list(s):
+        if not s:
+            return [0., 0., 0.]
+        return map(float, s.split(','))
+    
+    obj.pos = Vector3(*_float_list(translate))
+    rotate = _float_list(rotate)
+    if len(rotate) == 4: # around axis
+        obj.rotation = Quaternion.new_rotate_axis(rotate[0], Vector3(*vector[1:]))
+    else:
+        obj.rotation = Quaternion.new_rotate_euler(*[ i / 180. * math.pi for i in rotate ])
+        
 def _get_options(options, *names):
     for key in options:
         if key not in names:
