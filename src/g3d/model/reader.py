@@ -41,6 +41,9 @@ def read_into(loader, name, model, group):
     _load_group(loader, _parse(data), model, group)
 
 def _load_group(loader, tree, model, group):
+    if not tree:
+        return
+    
     def handle_part():
         model_name, name, translate, rotate = _get_options(options, 'model', 'name', 'translate', 'rotate')
         obj = g3d.wrap(loader.get_model(model_name))
@@ -58,17 +61,20 @@ def _load_group(loader, tree, model, group):
         obj = g3d.Container()
         _bind_trans(obj, translate, rotate)
         _load_group(loader, children, model, obj)
+        group.add(obj)
         if name:
             model.objects[name] = obj
-        
+
+    def handle_animation():
+        name, = _get_options(options, 'name')
+        animation = g3d.model.AnimationGroup()
+        model.animations[name] = animation
+        _load_anim(loader, children, model, animation)
+    
     def assert_no_children():
         if children:
             raise SyntaxError('command %s shouldn\'t have any children' % command)
 
-    def assert_has_children():
-        if not children:
-            raise SyntaxError('command %s should have at least one child' % command)
-        
     for item, children in tree:
         command, options = _parse_line(item)
 
@@ -79,24 +85,52 @@ def _load_group(loader, tree, model, group):
             assert_no_children()
             handle_part()
         elif command == 'group':
-            assert_has_children()
             handle_group()
+        elif command == 'animation':
+            handle_animation()
         else:
             raise SyntaxError('invalid command %s' % command)
 
-def _bind_trans(obj, translate, rotate):
-    def _float_list(s):
-        if not s:
-            return [0., 0., 0.]
-        return map(float, s.split(','))
+def _load_anim(loader, tree, model, animation):
+    def assert_no_children():
+        if children:
+            raise SyntaxError('command %s shouldn\'t have any children' % command)
     
+    for item, children in tree:
+        command, options = _parse_line(item)
+
+        if command == 'interpolate_to':
+            assert_no_children()
+            name, rotate, start, speed, time = _get_options(options, 'name', 'rotate',
+                                                            'start', 'speed', 'time')
+            speed = float(speed) if speed else None
+            speed = speed * math.pi / 180
+            time = float(time) if time else None
+            start = float(start or 0.0)
+            rotate = _parse_rotate(rotate)
+            anim = g3d.model.InterpolateRotation(model.objects[name], rotate, speed=speed, time=time)
+            animation.add(start=start, animation=anim)
+        else:
+            raise SyntaxError('invalid command %s' % command)
+
+def _float_list(s):
+    if not s:
+        return [0., 0., 0.]
+    return map(float, s.split(','))
+
+def _bind_trans(obj, translate, rotate):
     obj.pos = Vector3(*_float_list(translate))
-    rotate = _float_list(rotate)
+    obj.rotation = _parse_rotate(rotate)
+
+def _parse_rotate(s):
+    rotate = _float_list(s)
     if len(rotate) == 4: # around axis
-        obj.rotation = Quaternion.new_rotate_axis(rotate[0], Vector3(*vector[1:]))
+        return Quaternion.new_rotate_axis(rotate[0] / 180. * math.pi,
+                                                  Vector3(*vector[1:]))
     else:
-        obj.rotation = Quaternion.new_rotate_euler(*[ i / 180. * math.pi for i in rotate ])
-        
+        x, y, z = [ i / 180. * math.pi for i in rotate ]
+        return Quaternion.new_rotate_euler(y, z, x)
+    
 def _get_options(options, *names):
     for key in options:
         if key not in names:

@@ -1,0 +1,19 @@
+group name=arm translate=0,5.3,0 rotate=0,0,110
+      part model=lem2.mod
+      group name=forearm translate=5,0,0 rotate=0,0,-125
+            part model=lem3.mod
+            group name=hand translate=3.5,0,0 rotate=90,0,-50
+                  part model=lem4.mod
+                  part model=lem5.mod translate=1.5,0,0 rotate=0,0,-18
+                  part model=lem6.mod translate=1.5,0,0 rotate=0,0,18
+
+animation name=arm_front
+     interpolate_to name=arm     rotate=0,0,35    start=0 speed=40
+     interpolate_to name=forearm rotate=0,0,-95   start=0 speed=40
+     interpolate_to name=hand    rotate=90,0,-27  start=0 speed=40
+
+
+animation name=arm_normal
+     interpolate_to name=arm     rotate=0,0,110   start=0 speed=40
+     interpolate_to name=forearm rotate=0,0,-125  start=0 speed=40
+     interpolate_to name=hand    rotate=90,0,-50  start=0 speed=40

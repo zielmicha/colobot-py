@@ -26,7 +26,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from __future__ import division
 # RULE: do not modify vector unless you know that no one else will use it
-from euclid import Vector3, Vector2, Quaternion
+from g3d.math import Quaternion, Vector2, Vector3
 import collections
 import time
 

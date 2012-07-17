@@ -30,9 +30,14 @@ def rotate():
     rot = g3d.Quaternion.new_rotate_axis(3.14 / 180 * 5, g3d.Vector3(0, 1, 0))
     win.root.rotation = win.root.rotation * rot
 
+if name == 'wheeled-transporter.model':
+    animator = g3d.model.Animator()
+    animator.install(win.timer)
+    model.play(animator, 'arm_front')
+    
 win.timer.add_interval(0.1, rotate)
 
-g3d.camera_drivers.LookAtCameraDriver().install(win)
+g3d.camera_drivers.LookAtCameraDriver(radius=50).install(win)
 
 win.loop()
 
