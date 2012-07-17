@@ -1,1 +1,2 @@
 include name=wheeled.model
+include name=transporter.model
