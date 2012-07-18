@@ -2,7 +2,7 @@
 import sys, os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-import metafile
+from colobot import metafile
 
 if len(sys.argv) != 3:
     sys.exit('Usage: unpack-metafile.py metafile output-dir')
