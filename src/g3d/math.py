@@ -231,6 +231,26 @@ class Quaternion(object):
                    Hc * As * Bc - Hs * Ac * Bs)
 
     @classmethod
+    def angle_between(cls, q1, q2):
+        q1 = q1.normalized()
+        q2 = q2.normalized()
+
+        dot = q1.w * q2.w + q1.x * q2.x + q1.y * q2.y + q1.z * q2.z
+        if dot > 0.9995:
+            return q1 + t * (q1 - q2)
+
+        if dot < 0:
+            # we don't want to rotate "the longer way"
+            q1 = q1.conjugated()
+            dot *= -1
+
+        if dot > 1:
+            # or acos may raise MathError
+            dot = 1
+
+        return acos(dot)
+
+    @classmethod
     def new_interpolate(cls, q1, q2, t):
         # http://number-none.com/product/Understanding%20Slerp,%20Then%20Not%20Using%20It/
         q1 = q1.normalized()

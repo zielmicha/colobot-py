@@ -145,12 +145,7 @@ class InterpolateRotation(Animation):
         if self.req_time:
             return self.req_time
         else:
-            # quaternion multiplication is associative, so delta * self.start_rotation
-            # should == self.dest_rotation
-            delta = self.start_rotation.inversed() * self.dest_rotation
-            # delta is quaternion which represents rotation done by this animation
-            angle, axis = delta.get_angle_axis()
-            # - rotate by angle around axis
+            angle = Quaternion.angle_between(self.start_rotation, self.dest_rotation)
             return angle / self.req_speed
         
     def tick(self, time):
