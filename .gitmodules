@@ -1,0 +1,3 @@
+[submodule "multisock"]
+	path = multisock
+	url = git://github.com/zielmicha/multisock
