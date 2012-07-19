@@ -1,3 +1,4 @@
+#!/usr/bin/python
 # Copyright (C) 2012, Michal Zielinski <michal@zielinscy.org.pl>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -13,16 +14,22 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-def setup_path():
-    import sys, os
-    path = os.environ.get('MULTISOCK_PATH')
-    if not path:
-        path = os.path.join(os.path.dirname(__file__), '..', '..', 'multisock')
+import sys, os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-    if not os.path.exists(os.path.join(path, 'multisock')):
-        print >>sys.stderr, 'Looks like you haven\'t cloned submodules. Execute:'
-        print >>sys.stderr, '\tgit submodule init'
-        print >>sys.stderr, '\tgit submodule update'
-        print >>sys.stderr
-    
-    sys.path.append(path)
+import colobot
+colobot.setup_path()
+
+import colobot.client
+import getpass
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
+
+client = colobot.client.Client(sys.argv[1])
+if not client.authenticate_with_session():
+    login = raw_input('Username: ')
+    password = getpass.getpass()
+    client.authenticate_and_save(login, password)
+
+

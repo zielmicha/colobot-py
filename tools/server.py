@@ -20,4 +20,30 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 import colobot
 colobot.setup_path()
 
-import multisock
+import colobot.server.models
+import colobot.server.server
+
+import argparse
+import logging
+
+DEFAULT_PATH = '~/.colobot'
+DEFAULT_ADDRESS = 'tcp:localhost:2718'
+
+parser = argparse.ArgumentParser(description='Start Colobot-py server.')
+parser.add_argument('--profile', metavar='PROFILE', dest='profile',
+                    default=DEFAULT_PATH,
+                   help='where to store server data (default: %(default)s)')
+parser.add_argument('--address', metavar='ADDRESS', dest='address',
+                   default=DEFAULT_ADDRESS, # notice that default port == int(e*1000)
+                   help='address to bind (in form tcp:host:port or anything multisock accepts)'
+                    ' (default: %(default)s)')
+parser.add_argument('--log', metavar='LEVEL', dest='logging',
+                    default='INFO', choices=['INFO', 'DEBUG', 'ERROR'],
+                    help='logging level, one of: DEBUG, INFO, ERROR')
+
+args = parser.parse_args()
+
+logging.basicConfig(level=getattr(logging, args.logging.upper()))
+profile = colobot.server.models.Profile(os.path.expanduser(args.profile))
+
+colobot.server.server.Server(profile).run(args.address)
