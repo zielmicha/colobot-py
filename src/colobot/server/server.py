@@ -21,14 +21,17 @@ import time
 import logging
 
 import colobot.server.db
+import colobot.game
 
 from colobot.server.models import Profile
 from colobot.server.db import random_string
 
 class Server:
-    def __init__(self, profile):
+    def __init__(self, profile, loader):
         self.profile = profile
+        self.loader = loader
         self.lock = threading.RLock()
+        self.games = {}
 
     def _init(self, address):
         thread = multisock.SocketThread()
@@ -43,10 +46,19 @@ class Server:
         self._init(address).start()
 
     def accept(self, socket):
-        ConnectionHandler(self.profile, socket)
+        ConnectionHandler(server=self, profile=self.profile, socket=socket)
+
+    # -----------------------------
+
+    def create_game(self, name):
+        if name in self.games:
+            raise KeyError(name)
+
+        self.games[name] = colobot.game.Game(self.loader)
 
 class ConnectionHandler:
-    def __init__(self, profile, socket):
+    def __init__(self, server, profile, socket):
+        self.server = server
         self.socket = socket
         self.profile = profile
         self.user = None
@@ -62,6 +74,16 @@ class ConnectionHandler:
         self.rpc = multisock.jsonrpc.JsonRpcChannel(main, async=True)
         self.rpc.server = self
 
+    def rpc__getAttributeNames(self):
+        # for iPython
+        return [ name[4:] for name in dir(self) if name.startswith('rpc_') ]
+
+    def rpc_trait_names(self):
+        # for iPython
+        return []
+
+    # --------------------------
+        
     def rpc_get_auth_tokens(self, login):
         return {'token': self.auth_token,
                 'salt': self.profile.users.get_by('login', login)['salt'] if login else None}
@@ -79,3 +101,13 @@ class ConnectionHandler:
         if login != self.user.login:
             self.user.check_permission('manage-users')
         self.profile.users.get_by('name', login).change_password(password=password_token, salt=salt)
+
+    def rpc_list_games(self):
+        return self.server.games.keys()
+
+    def rpc_create_game(self, name):
+        self.user.check_permission('create-games')
+        self.server.create_game(name)
+
+    def rpc_load_terrain(self, game_name, name):
+        self.server.games[game_name].load_terrain(name)

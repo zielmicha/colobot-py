@@ -6,15 +6,15 @@ import StringIO
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-import colobot.modfile
+import colobot.loader
 
 from g3d import Vector2, Vector3
-from colobot.modfile import _Triangle as Triangle
+from colobot.loader import _Triangle as Triangle
 
 class TestLoader(unittest.TestCase):
     
     def test_loading_success(self):
-        loader = colobot.modfile.Loader()
+        loader = colobot.loader.Loader()
         loader.add_directory('data/models')
         loader.add_directory('data/diagram')
         loader.add_directory('data/textures')
@@ -26,7 +26,7 @@ class TestLoader(unittest.TestCase):
         self.assertRaises(KeyError, loader.get_model, 'keya')
 
     def test_disabled_textures(self):
-        loader = colobot.modfile.Loader(enable_textures=False)
+        loader = colobot.loader.Loader(enable_textures=False)
         loader.add_directory('data/models')
         
         self.assertTrue(loader.get_model('keya.mod'))
@@ -102,5 +102,5 @@ AAAAdmVnZXRhbC50Z2EAAAAAAAAAAAAAAAAAACR0SQAAAAABAAAAAAAAAA==
  Triangle(a=Vector3(1.40, 2.00, 0.00), b=Vector3(-0.70, 2.00, -1.21), c=Vector3(0.00, 2.00, 0.00), na=Vector3(-0.00, 1.00, 0.00), nb=Vector3(-0.00, 1.00, 0.00), nc=Vector3(-0.00, 1.00, 0.00), a_uv=Vector2(0.39, 0.00), b_uv=Vector2(0.37, 0.00), c_uv=Vector2(0.39, 0.00), tex_name='vegetal.tga', min=0.0, max=1000000.0, state=0, tex_num=1)]
     
     def test_loading_keya(self):
-        result = list(colobot.modfile._load_modfile_data(StringIO.StringIO(self.keya_data)))
+        result = list(colobot.loader._load_modfile_data(StringIO.StringIO(self.keya_data)))
         self.assertEqual(repr(result), repr(self.keya_result)) # need to compare repr, because it's generally not good idea to compare floats

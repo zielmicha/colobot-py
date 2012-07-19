@@ -1,4 +1,3 @@
-#!/usr/bin/python
 # Copyright (C) 2012, Michal Zielinski <michal@zielinscy.org.pl>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -14,24 +13,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys, os
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
+import g3d
+import g3d.terrain
 
-import colobot
-colobot.setup_path()
+class Game(object):
+    def __init__(self, loader):
+        self.terrain = g3d.terrain.Terrain()
+        self.loader = loader
 
-import colobot.client
-import getpass
-import logging
+    def load_terrain(self, name):
+        file = self.loader.index[name]()
+        self.terrain.load_from_relief(file)
 
-logging.basicConfig(level=logging.DEBUG)
-
-client = colobot.client.Client(sys.argv[1])
-if not client.authenticate_with_session():
-    login = raw_input('Username: ')
-    password = getpass.getpass()
-    client.authenticate_and_save(login, password)
-
-from IPython import embed
-
-embed()

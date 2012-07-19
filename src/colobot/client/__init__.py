@@ -42,10 +42,12 @@ class Client:
         auth_data = self.rpc.call.get_auth_tokens(login)
         auth_token, salt = auth_data['token'], auth_data['salt']
         password_token = sha256(auth_token + '\0' + sha256(password + '\0' + salt))
-        #print '%r %r %r %s' % (auth_token, password, salt, sha256(password + '\0' + salt))
         return self.rpc.call.authenticate(login, password_token)
 
     use_session = rpc_wrapper('use_session')
+    create_game = rpc_wrapper('create_game')
+    list_games = rpc_wrapper('list_games')
+    load_terrain = rpc_wrapper('load_terrain')
 
     def authenticate_with_session(self):
         ''' Tries to login with saved session.
@@ -82,3 +84,4 @@ class Client:
         path = os.path.join(CACHE_PATH, 'session')
         with open(path, 'w') as f:
             f.write(uid)
+

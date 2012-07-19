@@ -6,9 +6,9 @@ import g3d
 import g3d.gl
 import g3d.camera_drivers
 import g3d.model
-import colobot.modfile
+import colobot.loader
 
-loader = colobot.modfile.Loader()
+loader = colobot.loader.Loader()
 loader.add_directory('data/models')
 loader.add_directory('data/anim')
 loader.add_directory('data/diagram')

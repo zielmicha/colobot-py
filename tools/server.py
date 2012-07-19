@@ -22,9 +22,11 @@ colobot.setup_path()
 
 import colobot.server.models
 import colobot.server.server
+import colobot.loader
 
 import argparse
 import logging
+import glob
 
 DEFAULT_PATH = '~/.colobot'
 DEFAULT_ADDRESS = 'tcp:localhost:2718'
@@ -44,6 +46,12 @@ parser.add_argument('--log', metavar='LEVEL', dest='logging',
 args = parser.parse_args()
 
 logging.basicConfig(level=getattr(logging, args.logging.upper()))
-profile = colobot.server.models.Profile(os.path.expanduser(args.profile))
 
-colobot.server.server.Server(profile).run(args.address)
+profile = colobot.server.models.Profile(os.path.expanduser(args.profile))
+loader = colobot.loader.Loader(enable_textures=False)
+
+for path in glob.glob('data/*'):
+    if os.path.isdir(path):
+        loader.add_directory(path)
+
+colobot.server.server.Server(profile=profile, loader=loader).run(args.address)
