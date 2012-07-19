@@ -48,6 +48,7 @@ class Client:
     create_game = rpc_wrapper('create_game')
     list_games = rpc_wrapper('list_games')
     load_terrain = rpc_wrapper('load_terrain')
+    get_terrain = rpc_wrapper('get_terrain')
 
     def authenticate_with_session(self):
         ''' Tries to login with saved session.

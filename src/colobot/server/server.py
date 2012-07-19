@@ -111,3 +111,6 @@ class ConnectionHandler:
 
     def rpc_load_terrain(self, game_name, name):
         self.server.games[game_name].load_terrain(name)
+
+    def rpc_get_terrain(self, game_name):
+        return self.server.games[game_name].terrain.heights

@@ -14,34 +14,26 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys, os
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
+import g3d
+import g3d.terrain
+import g3d.gl
+import g3d.camera_drivers
 
-import colobot
-colobot.setup_path()
+class UIWindow(object):
+    def __init__(self, client, game_name):
+        self.client = client
+        self.terrain = g3d.terrain.Terrain()
+        self.game_name = game_name
 
-import colobot.client
-import colobot.client.ui
-import getpass
-import logging
+    def setup(self):
+        heights = self.client.get_terrain(self.game_name)
+        self.terrain.set_heights(heights)
 
-logging.basicConfig(level=logging.DEBUG)
-
-client = colobot.client.Client(sys.argv[1])
-if not client.authenticate_with_session():
-    login = raw_input('Username: ')
-    password = getpass.getpass()
-    client.authenticate_and_save(login, password)
-
-def open_window(name):
-    win = colobot.client.ui.UIWindow(client, name)
-    win.setup()
-    win.loop()
-
-client.create_game('game')
-client.load_terrain('game', 'relief15.png')
-
-open_window('game')
-
-from IPython import embed
-embed()
+    def loop(self):
+        win = g3d.gl.Window()
+        win.root.add(self.terrain.model)
+        g3d.camera_drivers.FreeCameraDriver().install(win)
+        
+        win.loop()
+    
+    

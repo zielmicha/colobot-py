@@ -47,6 +47,10 @@ class Terrain(object):
                 row.append(val * height / 256)
         self._update_model()
 
+    def set_heights(self, heights):
+        self.heights = heights
+        self._update_model()
+
     def _update_model(self):
         def _get(x, y):
             height = (self.heights[y])[x]
