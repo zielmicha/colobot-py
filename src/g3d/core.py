@@ -1,18 +1,18 @@
 # Copyright (c) 2012, Michal Zielinski <michal@zielinscy.org.pl>
 # All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
 # met:
-# 
+#
 #     * Redistributions of source code must retain the above copyright
 #     notice, this list of conditions and the following disclaimer.
-# 
+#
 #     * Redistributions in binary form must reproduce the above
 #     copyright notice, this list of conditions and the following
 #     disclaimer in the documentation and/or other materials provided
 #     with the distribution.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 # "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 # LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -89,7 +89,7 @@ class TriangleObject(Object):
                 last_tex = t.texture
             curr_group.append(t)
 
-        return [ (tex, self._serialize_triangles(triangles)) for tex, triangles in grouped_by_texture ]
+        return ([ (tex, self._serialize_triangles(triangles)) for tex, triangles in grouped_by_texture ], )
 
     def _serialize_triangles(self, list):
         return ''.join( struct.pack(self._triangle_struct,
@@ -98,8 +98,19 @@ class TriangleObject(Object):
                              t.a_uv.x, t.a_uv.y, t.b_uv.x, t.b_uv.y, t.c_uv.x, t.c_uv.y) for t in list )
 
     @classmethod
-    def _unserialize(self, x, y, z):
-        return Vector3(x, y, z)
+    def _unserialize(cls, groups):
+        obj = cls([])
+        for texture, triangles in groups:
+            struct_size = struct.calcsize(cls._triangle_struct)
+            obj._triangles += [
+                Triangle(Vector3(ax, ay, az), Vector3(bx, by, bz), Vector3(cx, cy, cz),
+                         Vector3(nax, nay, naz), Vector3(nbx, nby, nbz), Vector3(ncx, ncy, ncz),
+                         Vector2(a_uvx, a_uvy), Vector2(b_uvx, b_uvy), Vector2(c_uvx, c_uvy),
+                         texture)
+                for ax, ay, az, bx, by, bz, cx, cy, cz, nax, nay, naz, nbx, nby, nbz, ncx, ncy, ncz, a_uvx, a_uvy, b_uvx, b_uvy, c_uvx, c_uvy in [
+                    struct.unpack(cls._triangle_struct, triangles[i: i+struct_size])
+                    for i in xrange(0, len(triangles), struct_size) ] ]
+        return obj
 
 class Container(Object):
     def __init__(self):
@@ -136,7 +147,7 @@ class Timer:
                 ticker(delta)
 
         self._last_tick = current
-    
+
     def add_interval(self, interval, function):
         ''' Adds a function that will be called in regular intervals (in seconds). '''
         self._intervals.append([function, time.time() + interval, interval])
@@ -144,12 +155,9 @@ class Timer:
     def add_ticker(self, function):
         ''' Adds a function that will be called each tick with one argument - time elapsed from last call in seconds. '''
         self._tickers.append(function)
-        
+
 def wrap(obj):
     ' Wraps object with a container, so its position can be changed without modifing it. '
     c = Container()
     c.add(obj)
     return c
-
-
-

@@ -1,18 +1,18 @@
 # Copyright (c) 2012, Michal Zielinski <michal@zielinscy.org.pl>
 # All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
 # met:
-# 
+#
 #     * Redistributions of source code must retain the above copyright
 #     notice, this list of conditions and the following disclaimer.
-# 
+#
 #     * Redistributions in binary form must reproduce the above
 #     copyright notice, this list of conditions and the following
 #     disclaimer in the documentation and/or other materials provided
 #     with the distribution.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 # "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 # LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -37,12 +37,19 @@ import struct as _struct # do not use directly
 import hashlib
 import collections
 import StringIO
+import logging
 
 serializables_by_id = {}
 serializables_by_type = {}
 
 def pack(code, *args):
     return _struct.pack('!' + code, *args)
+
+def unpack(code, data):
+    return _struct.unpack('!' + code, data)
+
+def calcsize(code):
+    return _struct.calcsize('!' + code)
 
 def serializable(clazz):
     add_serializable_class(clazz, clazz)
@@ -52,7 +59,7 @@ def serializer_for(for_type):
     def method(clazz):
         add_serializable_class(clazz, for_type)
         return clazz
-    
+
     return method
 
 def sha1(data):
@@ -83,17 +90,18 @@ class Serializer(object):
         return id
 
     def get_dependencies(self, object):
+        ' Returns SHA1 of dependencies '
         return [ item for item in self.deps.get(object, [])
                  if item != self.objects[object] ]
-    
+
     def get_by_sha1(self, sha1):
         return self.serialized_by_sha1[sha1]
-    
+
     def serialize(self, object, no_separate=False):
         to = StringIO.StringIO()
         self.serialize_to(to, object, no_separate=no_separate)
         return to.getvalue()
-    
+
     def serialize_to(self, out, object, no_separate=False):
         serializer = self._get_serializer(object)
         separate = getattr(serializer, 'serial_separate', False)
@@ -107,7 +115,7 @@ class Serializer(object):
         else:
             out.write( pack('HH', *serializer.serial_id) )
             self._serialize_content(out, serializer, object)
-    
+
     def _serialize_content(self, out, serializer, object):
         if issubclass(serializer, IterableSerializer):
             self._serialize_iterable(out, object)
@@ -123,7 +131,7 @@ class Serializer(object):
             elif struct_code == None:
                 out.write( pack('I', len(result)) )
                 out.write(result)
-                
+
     def _serialize_iterable(self, out, object):
         l = list(object)
         out.write( pack('I', len(l)) )
@@ -133,16 +141,73 @@ class Serializer(object):
 
     def extend_dep(self, object, src_object):
         self.deps.setdefault(object, []).extend( self.deps.get(src_object, []) )
-                
+
     def _get_serializer(self, object):
         return serializables_by_type[object.__class__]
-    
+
+class Unserializer(object):
+    def __init__(self, cache=None):
+        self.cache = cache or {}
+        self.loaded = {}
+
+    def add(self, sha1, data):
+        self.cache[sha1] = data
+
+    def load(self, sha1):
+        if sha1 not in self.loaded:
+            try:
+                data = self.cache[sha1]
+            except KeyError:
+                raise RuntimeError('%s not added or in cache' % sha1.encode('hex'))
+            input = StringIO.StringIO(data)
+            obj = self.load_from(input)
+            self.loaded[sha1] = obj
+
+        return self.loaded[sha1]
+
+    def load_from(self, input):
+        def safe_call(serializer, args):
+            try:
+                return serializer._unserialize(*args)
+            except TypeError as err:
+                logging.error('when calling _unserialize of %s: %s', serializer, err)
+                raise
+
+        id = unpack('HH', input.read(4))
+        if id == (MODULE_BUILTIN, ID_SHA1):
+            return self.load(input.read(SHA1_LENGTH))
+        else:
+            serializer = self._get_serializer(id)
+            if issubclass(serializer, IterableSerializer):
+                size, = unpack('I', input.read(4))
+                l = [ self.load_from(input) for i in xrange(size) ]
+                return serializer.iter_class(l)
+            else:
+                struct = getattr(serializer, 'serial_struct', Ellipsis)
+                if struct == None:
+                    size, = unpack('I', input.read(4))
+                    return serializer._unserialize(input.read(size))
+                elif struct == Ellipsis:
+                    return safe_call(serializer, self.load_from(input))
+                else:
+                    size = calcsize(struct)
+                    params = unpack(struct, input.read(size))
+                    return safe_call(serializer, params)
+
+    def _get_serializer(self, id):
+        return serializables_by_id[id]
+
+class DiskCache(object):
+    ' Dictionary that stores its contest in directory '
+    def __init__(self, path):
+        raise NotImplementedError
+
 class IdDict(object):
     def __init__(self):
         self._data = {}
 
         # make sure that keys are not garbage collected
-        self._alive_keeper = {} 
+        self._alive_keeper = {}
 
     def __setitem__(self, key, item):
         self._alive_keeper[id(key)] = key
@@ -163,10 +228,10 @@ class IdDict(object):
         if id(key) not in self._data:
             return default
         return self[key]
-    
+
 class IterableSerializer:
     ''' Implemented in Serializer. '''
-    
+
 @serializer_for(list)
 class ListSerializer(IterableSerializer):
     serial_id = MODULE_BUILTIN, 2
@@ -194,7 +259,7 @@ class IntSerializer:
 class StrSerializer:
     serial_id = MODULE_BUILTIN, 5
     serial_struct = None
-    
+
     @staticmethod
     def _serialize(self):
         return self
@@ -202,7 +267,7 @@ class StrSerializer:
     @staticmethod
     def _unserialize(data):
         return data
-    
+
 if __name__ == '__main__':
     import g3d
     import g3d.gl
@@ -219,11 +284,19 @@ if __name__ == '__main__':
 
     #g3d.model.read(loader=loader, name='wheeled-transporter.model')
     model = loader.get_model('keya.mod')
-    
+
     s = g3d.serialize.Serializer()
-    sha1 = s.add(model)
-    print sha1.encode('hex')
-    data = s.get_by_sha1(sha1)
+    sha1hash = s.add(model)
+    print sha1hash.encode('hex')
+    data = s.get_by_sha1(sha1hash)
     import zlib
     print len(data), len(zlib.compress(data))
-    print s.deps[model]
+    print [ i.encode('hex') for i in s.deps[model] ]
+    print [ i.encode('hex') for i in s.get_dependencies(model) ]
+
+    uns = g3d.serialize.Unserializer()
+    uns.add(sha1hash, data)
+    for hash in s.get_dependencies(model):
+        data = s.get_by_sha1(hash)
+        uns.add(hash, data)
+    out = uns.load(sha1hash)

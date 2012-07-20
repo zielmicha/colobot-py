@@ -14,7 +14,7 @@ import g3d.serialize
 import colobot.loader
 
 class TestSerialize(unittest.TestCase):
-    def setUp(self):        
+    def setUp(self):
         self.loader = colobot.loader.Loader(enable_textures=True)
         self.loader.add_directory('data/models')
         self.loader.add_directory('data/anim')
@@ -23,11 +23,11 @@ class TestSerialize(unittest.TestCase):
 
     def test_serialize_model(self):
         model = self.loader.get_model('keya.mod')
-        
+
         s = g3d.serialize.Serializer()
         sha1 = s.add(model)
-        self.assertEqual( sha1.encode('hex'), '5588ab0897f5d2cb1f5022f950a1f22f9c4d877b' )
-        
+        self.assertEqual( sha1.encode('hex'), 'e1608989565054047629390ae10ac3f917cc3953' )
+
         self.assertEqual( hashlib.sha1(s.get_by_sha1(sha1)).digest(), sha1 )
         self.assertEqual( s.get_dependencies(model), ['\x17,XO\xc6\xcd=T\xe0!\x184+P?\x03!\xb5\xc1\xc3'] )
 
