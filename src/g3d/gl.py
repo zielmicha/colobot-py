@@ -25,6 +25,7 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import g3d
+import g3d.serialize
 from g3d import Vector2, Vector3
 
 from OpenGL import GL, GLU
@@ -33,6 +34,8 @@ from OpenGL.GL import *
 import numpy
 import pygame
 import time
+
+MODULE_SERIAL_ID = 3
 
 class Window:
     def __init__(self):
@@ -251,6 +254,7 @@ class TrianglesRenderer:
 def create_rgbx_texture(data, size):
     return TextureWrapper(data, size)
 
+@g3d.serialize.serializable
 class TextureWrapper(object):
     def __init__(self, data, size):
         self.size = size
@@ -264,10 +268,22 @@ class TextureWrapper(object):
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
         glTexImage2D(GL_TEXTURE_2D, 0, 3, w, h, 0,
                      GL_RGBA, GL_UNSIGNED_BYTE, self.data)
-        del self.size, self.data
+        # del self.size, self.data
 
     def get_id(self):
         if self._id == None:
             self._load()
         
         return self._id
+
+    # -------------------------------------
+
+    serial_id = MODULE_SERIAL_ID, 1
+    serial_separate = True
+
+    def _serialize(self):
+        return (self.size, self.data)
+
+    @classmethod
+    def _unserialize(cls, size, data):
+        return cls(data, size)

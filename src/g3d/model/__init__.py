@@ -45,9 +45,17 @@ class Model:
 
     def play(self, animator, name):
         animator.play(self.animations[name])
-        
+
     def clone(self):
-        pass # TODO
+        new = Model
+        cloned = {}
+
+        new.root = self.root.clone(clone_dict=cloned)
+        new.objects = dict( (k, cloned[v]) for k, v in self.object )
+        new.animations = dict( (k, v.clone()) for k, v in self.animations )
+
+        return new
+
 
 class Animator:
     '''
@@ -124,7 +132,12 @@ class AnimationGroup(Animation):
             return False
         else:
             return True
-    
+
+    def clone(self):
+        new = Animator()
+        new.anims = [ (start, anim.clone()) for start, anim in self.animations ]
+        return new
+
 class InterpolateRotation(Animation):
     def __init__(self, object, dest_rotation, speed=None, time=None):
         ''' speed in radians '''
@@ -158,4 +171,6 @@ class InterpolateRotation(Animation):
                                                       fraction)
         self.object.rotation = current_rotation
         return fraction != 1 # continue animation iff it is not completed
-    
+
+    def clone(self):
+        return InterpolateRotation(self.object, self.dest_rotation, self.req_speed, self.req_time)

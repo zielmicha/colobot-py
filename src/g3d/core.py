@@ -26,11 +26,15 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from __future__ import division
 from g3d.math import Quaternion, Vector2, Vector3
+import g3d.serialize
 import collections
 import time
+import struct
 
 Triangle = collections.namedtuple('Triangle',
                                   'a b c na nb nc a_uv b_uv c_uv texture')
+
+MODULE_SERIAL_ID = 2
 
 class options(object):
     enable_textures = True
@@ -40,6 +44,16 @@ class Object(object):
         self.pos = Vector3()
         self.rotation = Quaternion()
 
+    def clone(self, clone_dict=None):
+        if clone_dict:
+            clone_dict[self] = new
+
+        obj = type(self)()
+        obj.pos = self.pos
+        obj.rotation = self.rotation
+        return obj
+
+@g3d.serialize.serializable
 class TriangleObject(Object):
     def __init__(self, triangles):
         super(TriangleObject, self).__init__()
@@ -50,20 +64,58 @@ class TriangleObject(Object):
     def triangles(self):
         return self._triangles
 
+    def clone(self, clone_dict=None):
+        if clone_dict:
+            clone_dict[self] = new
+
+        return self
+
+    # ------------------------------
+
+    serial_id = MODULE_SERIAL_ID, 1
+    serial_separate = True
+
+    _triangle_struct = '!' + ('fff' * 3) * 2 + ('ff' * 3)
+
+    def _serialize(self):
+        grouped_by_texture = []
+        curr_group = None
+
+        last_tex = Ellipsis
+        for t in sorted(self._triangles, key=lambda t: t.texture):
+            if t.texture != last_tex:
+                curr_group = []
+                grouped_by_texture.append((t.texture, curr_group))
+                last_tex = t.texture
+            curr_group.append(t)
+
+        return [ (tex, self._serialize_triangles(triangles)) for tex, triangles in grouped_by_texture ]
+
+    def _serialize_triangles(self, list):
+        return ''.join( struct.pack(self._triangle_struct,
+                             t.a.x, t.a.y, t.a.z, t.b.x, t.b.y, t.b.z, t.c.x, t.c.y, t.c.z,
+                             t.na.x, t.na.y, t.na.z, t.nb.x, t.nb.y, t.nb.z, t.nc.x, t.nc.y, t.nc.z,
+                             t.a_uv.x, t.a_uv.y, t.b_uv.x, t.b_uv.y, t.c_uv.x, t.c_uv.y) for t in list )
+
+    @classmethod
+    def _unserialize(self, x, y, z):
+        return Vector3(x, y, z)
+
 class Container(Object):
     def __init__(self):
         super(Container, self).__init__()
         self.objects = []
-    
-    def _draw_content(self):
-        for obj in self.objects:
-            obj._draw()
 
     def add(self, obj):
         self.objects.append(obj)
 
     def remove(self, obj):
         self.objects.remove(obj)
+
+    def clone(self, clone_dict=None):
+        new = Object.clone(self, clone_dict)
+        new.objects = [ obj.clone() for obj in self.objects ]
+        return new
 
 class Timer:
     def __init__(self):

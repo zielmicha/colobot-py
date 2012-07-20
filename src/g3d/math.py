@@ -29,8 +29,13 @@
 
 from __future__ import absolute_import, division
 
+import g3d.serialize
+
 from math import sin, cos, pi, acos, asin, tan, atan
 
+MODULE_SERIAL_ID = 1
+
+@g3d.serialize.serializable
 class Vector2(object):
     def __init__(self, x=0, y=0):
         self.x = x
@@ -60,6 +65,17 @@ class Vector2(object):
     def __getitem__(self, i):
         return [self.x, self.y][i]
 
+    serial_id = MODULE_SERIAL_ID, 1
+    serial_struct = 'ff'
+
+    def _serialize(self):
+        return (self.x, self.y)
+
+    @classmethod
+    def _unserialize(self, x, y):
+        return Vector2(x, y)
+
+@g3d.serialize.serializable
 class Vector3(object):
     def __init__(self, x=0, y=0, z=0):
         self.x = x
@@ -106,6 +122,17 @@ class Vector3(object):
     def __getitem__(self, i):
         return [self.x, self.y, self.z][i]
 
+    serial_id = MODULE_SERIAL_ID, 2
+    serial_struct = 'fff'
+
+    def _serialize(self):
+        return (self.x, self.y, self.z)
+
+    @classmethod
+    def _unserialize(self, x, y, z):
+        return Vector3(x, y, z)
+
+@g3d.serialize.serializable
 class Quaternion(object):
     def __init__(self, w=1, x=0, y=0, z=0):
         self.w = w
@@ -274,3 +301,13 @@ class Quaternion(object):
         q3 = (q2 - q1 * dot).normalized()
         
         return q1 * cos(theta) + q3 * sin(theta)
+
+    serial_id = MODULE_SERIAL_ID, 3
+    serial_struct = 'ffff'
+
+    def _serialize(self):
+        return (self.w, self.x, self.y, self.z)
+
+    @classmethod
+    def _unserialize(self, w, x, y, z):
+        return Quaternion(w, x, y, z)
