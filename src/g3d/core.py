@@ -43,6 +43,7 @@ class Object(object):
     def __init__(self):
         self.pos = Vector3()
         self.rotation = Quaternion()
+        self.scale = 1
 
     def clone(self, clone_dict=None):
         if clone_dict:
@@ -89,7 +90,7 @@ class TriangleObject(Object):
                 last_tex = t.texture
             curr_group.append(t)
 
-        return ([ (tex, self._serialize_triangles(triangles)) for tex, triangles in grouped_by_texture ], )
+        return (self.pos, self.rotation, self.scale, [ (tex, self._serialize_triangles(triangles)) for tex, triangles in grouped_by_texture ], )
 
     def _serialize_triangles(self, list):
         return ''.join( struct.pack(self._triangle_struct,
@@ -98,7 +99,7 @@ class TriangleObject(Object):
                              t.a_uv.x, t.a_uv.y, t.b_uv.x, t.b_uv.y, t.c_uv.x, t.c_uv.y) for t in list )
 
     @classmethod
-    def _unserialize(cls, groups):
+    def _unserialize(cls, pos, rotation, scale, groups):
         obj = cls([])
         for texture, triangles in groups:
             struct_size = struct.calcsize(cls._triangle_struct)
@@ -110,6 +111,9 @@ class TriangleObject(Object):
                 for ax, ay, az, bx, by, bz, cx, cy, cz, nax, nay, naz, nbx, nby, nbz, ncx, ncy, ncz, a_uvx, a_uvy, b_uvx, b_uvy, c_uvx, c_uvy in [
                     struct.unpack(cls._triangle_struct, triangles[i: i+struct_size])
                     for i in xrange(0, len(triangles), struct_size) ] ]
+        obj.pos = pos
+        obj.rotation = rotation
+        obj.scale = scale
         return obj
 
 @g3d.serialize.serializable
@@ -134,12 +138,15 @@ class Container(Object):
     serial_id = MODULE_SERIAL_ID, 2
 
     def _serialize(self):
-        return (self.objects,)
+        return (self.pos, self.rotation, self.scale, self.objects,)
 
     @classmethod
-    def _unserialize(self, objects):
+    def _unserialize(self, pos, rotation, scale, objects):
         c = Container()
         c.objects = objects
+        c.pos = pos
+        c.rotation = rotation
+        c.scale = scale
         return c
 
 class Timer:
