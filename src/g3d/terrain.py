@@ -33,12 +33,12 @@ from g3d import Vector2, Vector3
 from g3d.math import floor, ceil
 
 class Terrain(object):
-    def __init__(self, base_size=2):
+    def __init__(self, base_size=30):
         self.base_size = base_size
         self.heights = []
         self.model = None
 
-    def load_from_relief(self, file, height=80):
+    def load_from_relief(self, file, height=1200):
         im = pygame.image.load(file)
         for x in xrange(im.get_width()):
             row = []
@@ -58,7 +58,7 @@ class Terrain(object):
             p1, p2, p3 = plane
             # plane: Ax + By + Cz + D = 0
             A, B, C = (p2 - p1).cross(p3 - p1)
-            D = -(A*p1.x + B*p1.y + C*p1.zx)
+            D = -(A*p1.x + B*p1.y + C*p1.z)
             # z = (- D - Ax - By) / C
             return (- D - A * x - B * y) / C
 
@@ -75,11 +75,11 @@ class Terrain(object):
             raise IndexError(pos)
 
         nx, ny = floor(x / self.base_size), floor(y / self.base_size)
-        a = _get(x, y)
-        b = _get(x + 1, y)
-        c = _get(x, y + 1)
-        d = _get(x + 1, y + 1)
-        rx, ry = pos - a
+        a = _get(nx, ny)
+        b = _get(nx + 1, ny)
+        c = _get(nx, ny + 1)
+        d = _get(nx + 1, ny + 1)
+        rx, ry = pos - Vector2(a.x, a.y)
 
         if rx + ry < 1:
             plane = a, b, c

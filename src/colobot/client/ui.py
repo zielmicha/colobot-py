@@ -81,11 +81,11 @@ class CameraDriver(g3d.camera_drivers.CameraDriver):
 
     def tick(self, delta):
         if not self._object:
-            if self.window.objects_by_id: # race condition
+            if self.window.objects_by_id: # FIXME: race condition
                 self._object = self.window.objects_by_id[self.window.objects_by_id.keys()[0]]
             pass # top view
         else:
             vec = Vector3(1, 0, 0)#self._object.root.rotation * Vector3(1, 0, 0)
-            translate = Vector3(0, 0, 30)
-            self.camera.eye = self._object.root.pos - vec * 80. + translate
+            translate = Vector3(0, 0, 120)
+            self.camera.eye = self._object.root.pos - vec * 240. + translate
             self.camera.center = self._object.root.pos

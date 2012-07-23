@@ -17,7 +17,7 @@ import g3d
 import g3d.model
 import g3d.terrain
 
-from g3d.math import Vector2, Vector3, Quaternion
+from g3d.math import Vector2, Vector3, Quaternion, atan
 
 import threading
 import os
@@ -30,7 +30,7 @@ class Game(object):
         self.global_lock = threading.RLock()
         self.players = {}
 
-        self.gravity = Vector3()
+        self.gravity = Vector3(0, 0, -3)
 
     def get_player(self, name):
         if name not in self.players:
@@ -56,8 +56,8 @@ class Game(object):
         model = g3d.model.read(loader=self.loader, name=name).clone()
         obj = Object(self, model)
         obj.owner = player
-        obj.position = Vector3(5, 5, 20)
-        obj.velocity = Vector3(4, 0, 0)
+        obj.position = Vector3(120, 135, 210)
+        obj.velocity = Vector3(50, 0, 0)
         self.objects.append(obj)
 
     def get_player_objects(self, player_name):
@@ -80,18 +80,29 @@ class Object(object):
         self.rotation = Quaternion()
         self.angular_velocity = Quaternion()
 
-        self.ground_area = Vector2(1, 1)
-
     def tick(self, time):
         # self.rotation *= self.angular_velocity ** time - TODO
         self.rotation = self.rotation.normalized()
         self.position += self.velocity * time # + (self.game.gravity * time ** 2) / 2
-        #self.velocity += self.game.gravity * time
+        self.velocity += self.game.gravity * time
 
         self.check_ground()
 
     def check_ground(self):
-        pass
+        center = Vector2(self.position.x, self.position.y)
+        height = self.game.terrain.get_height_at(center)
+        if self.position.z <= height:
+            self.position.z = height
+
+            height_x = self.game.terrain.get_height_at(center + Vector2(1, 0))
+            angle_x = atan(height_x - height)
+            d_rotation = Quaternion.new_rotate_axis(-angle_x, Vector3(0, 1, 0)) # TODO: update not override
+
+            height_y = self.game.terrain.get_height_at(center + Vector2(0, 1))
+            angle_y = atan(height_y - height)
+            d_rotation *= Quaternion.new_rotate_axis(angle_y, Vector3(1, 0, 0))
+
+            self.rotation = d_rotation # TODO: use angular_velocity instead
 
 def random_string(len=9):
     return os.urandom(len).encode('base64')[:len].replace('+', 'A').replace('/', 'B')
