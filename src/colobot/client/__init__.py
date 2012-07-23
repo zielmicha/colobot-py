@@ -20,11 +20,19 @@ import hashlib
 import os
 
 import logging
+import StringIO
+
+import g3d.serialize
+
+# make sure that serializer knows all used modules
+import g3d.model
 
 CACHE_PATH = os.path.expanduser('~/.cache/colobot')
 
 def sha256(x):
     return hashlib.sha256(x).hexdigest()
+
+SHA1_LENGTH = 20
 
 def rpc_wrapper(name):
     ' Returns function that calls self.rpc.`name` '
@@ -35,6 +43,7 @@ def rpc_wrapper(name):
 
 class Client:
     def __init__(self, address):
+        self.unserializer = g3d.serialize.Unserializer()
         self.socket = multisock.connect(address)
         self.rpc = multisock.jsonrpc.JsonRpcChannel(self.socket.get_main_channel())
 
@@ -55,7 +64,7 @@ class Client:
         If it returns False you need to manually authenticate with
         authenticate_and_save'''
         session = self.load_session()
-        
+
         if session:
             try:
                 self.use_session(session)
@@ -86,3 +95,66 @@ class Client:
         with open(path, 'w') as f:
             f.write(uid)
 
+    def fetch_objects(self, idents):
+        idents = [ ident for ident in idents if ident not in self.unserializer.cache ]
+        if not idents:
+            return
+        logging.debug('fetching %s', [ id.encode('hex') for id in idents ])
+        deps = list(set(self.get_dependencies(idents) + idents))
+        for sha1, data in self.get_resources(deps):
+            assert sha1 in deps, '%r not in %s' % (sha1, deps)
+            logging.debug('adding %s', sha1.encode('hex'))
+            self.unserializer.add(sha1, data)
+        logging.debug('done')
+
+    def get_resources(self, idents):
+        channel_id = self.rpc.call.get_resources([ i.encode('hex') for i in idents ])
+        channel = self.socket.get_channel(channel_id)
+
+        for i in xrange(len(idents)):
+            packet = channel.recv()
+            yield packet[ :SHA1_LENGTH], packet[SHA1_LENGTH: ]
+
+    def get_dependencies(self, idents):
+        return [ i.decode('hex') for i in self.rpc.call.get_dependencies([ i.encode('hex') for i in idents ]) ]
+
+    def open_update_channel(self, name):
+        return self.socket.get_channel(self.rpc.call.open_update_channel(name))
+
+class UpdateReader:
+    def __init__(self, client, channel):
+        self.channel = channel
+        self.client = client
+
+        self.unserialized = multisock.Operation() # TODO: add max queue size
+        multisock.async(self.loop)
+
+    def loop(self):
+        multisock.set_thread_name('update recv')
+        try:
+            while True:
+                self.tick()
+        finally:
+            self.unserialized.close()
+
+    def tick(self):
+        blob = self.channel.recv()
+        data = self.client.unserializer.load_from(StringIO.StringIO(blob))
+
+        time, new, deleted, updates = data
+
+        self.client.fetch_objects([ model for ident, model in new ])
+
+        self.unserialized.dispatch((
+                time, # TODO: synchronize time with server
+                [ (ident, self.client.unserializer.load(model)) for ident, model in new ],
+                deleted,
+                updates
+        ))
+
+    def get_new_updates(self):
+        ''' Retruns None if new updates haven\'t arrived yet. Never blocks. '''
+        try:
+            return self.unserialized.noblock()
+        except multisock.Operation.WouldBlock:
+            return None

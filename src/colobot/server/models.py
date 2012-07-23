@@ -33,14 +33,14 @@ class Profile:
         path = os.path.join(self.path, join(*args))
         if not os.path.exists(path):
             os.makedirs(path)
-        
+
     def get(self, *args, **kwargs):
         path = os.path.join(self.path, join(*args))
         return File(path, **kwargs)
 
 class AuthenticationError(Exception):
     pass
-    
+
 class User:
     def __init__(self, profile, entry):
         self.entry = entry
@@ -50,17 +50,22 @@ class User:
             return True
         return False # TODO: ACL
 
+    def check_game_permission(self, game, name):
+        if self['login'] == 'root':
+            return True
+        return False # TODO: ACL
+
     def change_password(self, password, salt):
         self[salt] = salt
         self[password] = password
         self.profile.users.write()
-    
+
     def __getitem__(self, name):
         return self.entry[name]
 
 class Users(List):
     entry_cls = User
-    
+
     def __init__(self, profile):
         self.file = profile.get('users')
         self.profile = profile
@@ -99,5 +104,3 @@ class Sessions(List):
 
     def get_session(self, uid):
         return self.get_by('uid', uid)['login']
-        
-   

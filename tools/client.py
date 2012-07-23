@@ -40,6 +40,7 @@ def open_window(name):
 
 client.create_game('game')
 client.load_terrain('game', 'relief15.png')
+client.rpc.call.create_static_object('game', 'wheeled-transporter.model')
 
 open_window('game')
 

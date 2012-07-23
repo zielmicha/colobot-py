@@ -79,6 +79,7 @@ SHA1_LENGTH = 20
 class Serializer(object):
     def __init__(self):
         self.objects = IdDict()
+        self.objects_by_sha1 = {}
         self.deps = IdDict()
         self.serialized_by_sha1 = {}
 
@@ -87,9 +88,15 @@ class Serializer(object):
         id = sha1(data)
         self.objects[object] = id
         self.serialized_by_sha1[id] = data
+        self.objects_by_sha1[id] = object
         return id
 
+    def get_dependencies_by_sha1(self, sha1):
+        return self.get_dependencies(self.objects_by_sha1[sha1])
+
     def get_dependencies(self, object):
+        if type(object) == str and len(object) == SHA1_LENGTH:
+            logging.warn('get_dependencies on something that looks like sha1')
         ' Returns SHA1 of dependencies '
         return [ item for item in self.deps.get(object, [])
                  if item != self.objects[object] ]
@@ -158,7 +165,7 @@ class Unserializer(object):
             try:
                 data = self.cache[sha1]
             except KeyError:
-                raise RuntimeError('%s not added or in cache' % sha1.encode('hex'))
+                raise ObjectNotAddedError(sha1)
             input = StringIO.StringIO(data)
             obj = self.load_from(input)
             self.loaded[sha1] = obj
@@ -196,6 +203,12 @@ class Unserializer(object):
 
     def _get_serializer(self, id):
         return serializables_by_id[id]
+
+class ObjectNotAddedError(Exception):
+    ' Raised when required object is not added. '
+    def __init__(self, sha1):
+        Exception.__init__(self, sha1.encode('hex'))
+        self.sha1 = sha1
 
 class DiskCache(object):
     ' Dictionary that stores its contest in directory '
@@ -242,11 +255,7 @@ class TupleSerializer(IterableSerializer):
     serial_id = MODULE_BUILTIN, 3
     iter_class = tuple
 
-@serializer_for(int)
-class IntSerializer:
-    serial_id = MODULE_BUILTIN, 4
-    serial_struct = 'i'
-
+class PrimitiveSerializer:
     @staticmethod
     def _serialize(self):
         return (self, )
@@ -254,6 +263,11 @@ class IntSerializer:
     @staticmethod
     def _unserialize(data):
         return data
+
+@serializer_for(int)
+class IntSerializer(PrimitiveSerializer):
+    serial_struct = 'i'
+    serial_id = MODULE_BUILTIN, 4
 
 @serializer_for(str)
 class StrSerializer:
@@ -267,6 +281,36 @@ class StrSerializer:
     @staticmethod
     def _unserialize(data):
         return data
+
+@serializer_for(float)
+class FloatSerializer(PrimitiveSerializer):
+    serial_struct = 'f'
+    serial_id = MODULE_BUILTIN, 6
+
+@serializer_for(type(None))
+class NoneSerializer:
+    serial_struct = ''
+    serial_id = MODULE_BUILTIN, 7
+
+    @staticmethod
+    def _serialize(self):
+        return ()
+
+    @staticmethod
+    def _unserialize():
+        return None
+
+@serializer_for(dict)
+class NoneSerializer:
+    serial_id = MODULE_BUILTIN, 8
+
+    @staticmethod
+    def _serialize(self):
+        return (self.items(), )
+
+    @staticmethod
+    def _unserialize(seq):
+        return dict(seq)
 
 if __name__ == '__main__':
     import g3d

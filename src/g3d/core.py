@@ -112,6 +112,7 @@ class TriangleObject(Object):
                     for i in xrange(0, len(triangles), struct_size) ] ]
         return obj
 
+@g3d.serialize.serializable
 class Container(Object):
     def __init__(self):
         super(Container, self).__init__()
@@ -128,11 +129,25 @@ class Container(Object):
         new.objects = [ obj.clone() for obj in self.objects ]
         return new
 
+    # ------------------------------
+
+    serial_id = MODULE_SERIAL_ID, 2
+
+    def _serialize(self):
+        return (self.objects,)
+
+    @classmethod
+    def _unserialize(self, objects):
+        c = Container()
+        c.objects = objects
+        return c
+
 class Timer:
-    def __init__(self):
+    def __init__(self, min_interval=0):
         self._intervals = []
         self._tickers = []
         self._last_tick = None
+        self.min_interval = min_interval
 
     def tick(self):
         current = time.time()
@@ -146,6 +161,9 @@ class Timer:
             for ticker in self._tickers:
                 ticker(delta)
 
+            if delta < self.min_interval:
+                time.sleep(self.min_interval - delta)
+
         self._last_tick = current
 
     def add_interval(self, interval, function):
@@ -155,6 +173,10 @@ class Timer:
     def add_ticker(self, function):
         ''' Adds a function that will be called each tick with one argument - time elapsed from last call in seconds. '''
         self._tickers.append(function)
+
+    def loop(self):
+        while True:
+            self.tick()
 
 def wrap(obj):
     ' Wraps object with a container, so its position can be changed without modifing it. '

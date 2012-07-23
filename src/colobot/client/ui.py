@@ -19,11 +19,18 @@ import g3d.terrain
 import g3d.gl
 import g3d.camera_drivers
 
+import colobot.client
+
 class UIWindow(object):
     def __init__(self, client, game_name):
         self.client = client
         self.terrain = g3d.terrain.Terrain()
         self.game_name = game_name
+        self.update_reader = colobot.client.UpdateReader(
+            client, client.open_update_channel(game_name))
+
+        self.root = g3d.Container()
+        self.objects_by_id = {}
 
     def setup(self):
         heights = self.client.get_terrain(self.game_name)
@@ -31,9 +38,24 @@ class UIWindow(object):
 
     def loop(self):
         win = g3d.gl.Window()
+        win.timer.add_ticker(self.tick)
         win.root.add(self.terrain.model)
+        win.root.add(self.root)
         g3d.camera_drivers.FreeCameraDriver().install(win)
-        
+
         win.loop()
-    
-    
+
+    def tick(self, _):
+        data = self.update_reader.get_new_updates()
+        if not data:
+            return
+
+        server_time, new, deleted, updates = data
+        for ident, model in new:
+            self.objects_by_id[ident] = model
+            self.root.add(model.root)
+
+        for ident in deleted:
+            model = self.objects_by_id[ident]
+            del self.objects_by_id[ident]
+            self.root.remove(model.root)

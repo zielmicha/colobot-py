@@ -1,18 +1,18 @@
 # Copyright (c) 2012, Michal Zielinski <michal@zielinscy.org.pl>
 # All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
 # met:
-# 
+#
 #     * Redistributions of source code must retain the above copyright
 #     notice, this list of conditions and the following disclaimer.
-# 
+#
 #     * Redistributions in binary form must reproduce the above
 #     copyright notice, this list of conditions and the following
 #     disclaimer in the documentation and/or other materials provided
 #     with the distribution.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 # "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 # LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -28,9 +28,13 @@
 import g3d
 from g3d import Vector2, Vector3, Quaternion
 from g3d.model.reader import read
+import g3d.serialize
 
 import abc
 
+MODULE_SERIAL_ID = 4
+
+@g3d.serialize.serializable
 class Model:
     '''
     Model represents an object - it consists of:
@@ -47,15 +51,29 @@ class Model:
         animator.play(self.animations[name])
 
     def clone(self):
-        new = Model
+        new = Model()
         cloned = {}
 
         new.root = self.root.clone(clone_dict=cloned)
-        new.objects = dict( (k, cloned[v]) for k, v in self.object )
-        new.animations = dict( (k, v.clone()) for k, v in self.animations )
+        new.objects = {} # FIXME: dict( (k, cloned[v]) for k, v in self.objects.items() )
+        new.animations = {} # FIXME: dict( (k, v.clone()) for k, v in self.animations.items() )
 
         return new
 
+    # --------------------
+
+    serial_id = MODULE_SERIAL_ID, 1
+
+    def _serialize(self):
+        return (self.root, {}, {}) # TODO
+
+    @classmethod
+    def _unserialize(cls, root, animations, objects):
+        model = Model()
+        model.root = root
+        model.animations = animations
+        model.objects = objects
+        return model
 
 class Animator:
     '''
@@ -92,11 +110,12 @@ class Animation:
     def tick(self, time):
         ''' Called on each game tick when animation is running.
         If this method returns false value animation will be stopped. '''
-    
+
+@g3d.serialize.serializable
 class AnimationGroup(Animation):
     def __init__(self):
         self.anims = []
-    
+
     def add(self, start, animation):
         ' Adds animation to group - cannot be called when animation is running. '
         self.anims.append((start, animation))
@@ -116,7 +135,7 @@ class AnimationGroup(Animation):
                 anything_left = True
             else:
                 self.running.remove(anim)
-        
+
         while self.next_child < len(self.anims):
             start_at, anim = self.anims[self.next_child]
             if start_at < self.time:
@@ -138,6 +157,20 @@ class AnimationGroup(Animation):
         new.anims = [ (start, anim.clone()) for start, anim in self.animations ]
         return new
 
+    # --------------------
+
+    serial_id = MODULE_SERIAL_ID, 2
+
+    def _serialize(self):
+        return (self.anims, ) # TODO
+
+    @classmethod
+    def _unserialize(cls, anims):
+        anim = cls()
+        anim.anims = anims
+        return anim
+
+@g3d.serialize.serializable
 class InterpolateRotation(Animation):
     def __init__(self, object, dest_rotation, speed=None, time=None):
         ''' speed in radians '''
@@ -160,7 +193,7 @@ class InterpolateRotation(Animation):
         else:
             angle = Quaternion.angle_between(self.start_rotation, self.dest_rotation)
             return angle / self.req_speed
-        
+
     def tick(self, time):
         self.current_time += time
         fraction = self.current_time / self.total_time # part of animation done
@@ -174,3 +207,14 @@ class InterpolateRotation(Animation):
 
     def clone(self):
         return InterpolateRotation(self.object, self.dest_rotation, self.req_speed, self.req_time)
+
+    # --------------------
+
+    serial_id = MODULE_SERIAL_ID, 3
+
+    def _serialize(self):
+        raise NotImplementedError # TODO
+
+    @classmethod
+    def _unserialize(cls, ):
+        raise NotImplementedError

@@ -19,6 +19,8 @@ import threading
 import functools
 import time
 import logging
+import os
+import json
 
 import colobot.server.db
 import colobot.game
@@ -26,10 +28,15 @@ import colobot.game
 from colobot.server.models import Profile
 from colobot.server.db import random_string
 
+import g3d.serialize
+
+SHA1_LENGTH = 20 # TODO: move to colobot.common
+
 class Server:
     def __init__(self, profile, loader):
         self.profile = profile
         self.loader = loader
+        self.serializer = g3d.serialize.Serializer()
         self.lock = threading.RLock()
         self.games = {}
 
@@ -38,7 +45,7 @@ class Server:
         acceptor = thread.listen(address)
         acceptor.accept.bind(self.accept)
         return thread
-        
+
     def run(self, address):
         self._init(address).loop()
 
@@ -62,13 +69,13 @@ class ConnectionHandler:
         self.socket = socket
         self.profile = profile
         self.user = None
-        
+
         self.reset_auth_token()
         self.setup_connection()
 
     def reset_auth_token(self):
         self.auth_token = random_string(20)
-        
+
     def setup_connection(self):
         main = self.socket.get_main_channel()
         self.rpc = multisock.jsonrpc.JsonRpcChannel(main, async=True)
@@ -83,7 +90,15 @@ class ConnectionHandler:
         return []
 
     # --------------------------
-        
+
+    def rpc_eval(self, code):
+        if self.user['login'] != 'root':
+            raise RuntimeError('only root can eval')
+        if os.environ['COLOBOT_EVAL'] != 'allow':
+            raise RuntimeError('COLOBOT_EVAL env varible not set to "allow"')
+
+        return eval(code, {'server': self.server, 'user': self.user, 'self': self})
+
     def rpc_get_auth_tokens(self, login):
         return {'token': self.auth_token,
                 'salt': self.profile.users.get_by('login', login)['salt'] if login else None}
@@ -96,7 +111,7 @@ class ConnectionHandler:
     def rpc_use_session(self, uid):
         name = self.profile.sessions.get_session(uid)
         self.user = self.profile.users.get_by('login', name)
-    
+
     def rpc_passwd(self, login, password_token, salt):
         if login != self.user.login:
             self.user.check_permission('manage-users')
@@ -110,7 +125,71 @@ class ConnectionHandler:
         self.server.create_game(name)
 
     def rpc_load_terrain(self, game_name, name):
+        self.user.check_game_permission(game_name, 'manage')
         self.server.games[game_name].load_terrain(name)
 
     def rpc_get_terrain(self, game_name):
         return self.server.games[game_name].terrain.heights
+
+    def rpc_get_dependencies(self, objects_sha1):
+        l = []
+        for object_sha1 in objects_sha1:
+            l += self.server.serializer.get_dependencies_by_sha1(object_sha1.decode('hex'))
+        return [ ident.encode('hex') for ident in l ]
+
+    def rpc_get_resources(self, identifiers):
+        channel = self.socket.new_channel()
+        for ident in identifiers:
+            ident = ident.decode('hex')
+            assert type(ident) == str and len(ident) == SHA1_LENGTH, repr(ident)
+            data = self.server.serializer.get_by_sha1(ident)
+            channel.send_async(ident + data)
+        return channel.id
+
+    def rpc_open_update_channel(self, name):
+        channel = self.socket.new_channel()
+        handler = UpdateChannelHandler(channel, self.server, self.server.games[name])
+        multisock.async(handler.loop)
+        return channel.id
+
+    def rpc_create_static_object(self, game_name, model_name):
+        self.user.check_game_permission(game_name, 'manage')
+        self.server.games[game_name].create_static_object(model_name)
+
+class UpdateChannelHandler(object):
+    def __init__(self, channel, server, game):
+        self.channel = channel
+        self.game = game
+        self.server = server
+
+        self.last_objects = set()
+
+    def loop(self):
+        multisock.set_thread_name('update sender')
+        timer = g3d.Timer(min_interval=0.03)
+        timer.add_ticker(self.tick)
+        timer.loop()
+
+    def tick(self, _):
+        # TODO: use denser format
+        objects = set(self.game.get_objects())
+
+        new_objects = objects - self.last_objects
+        deleted_objects = self.last_objects - objects
+        updates = []
+
+        updates_time = time.time()
+        for obj in objects:
+            updates.append((obj.ident, obj.position, obj.velocity, obj.rotation, obj.angular_velocity))
+
+        data = (
+                updates_time,
+                [ (obj.ident, self.server.serializer.add(obj.model)) for obj in new_objects ],
+                [ obj.ident for obj in deleted_objects ],
+                updates,
+        )
+
+        blob = self.server.serializer.serialize(data)
+        self.channel.send(blob)
+
+        self.last_objects = objects
