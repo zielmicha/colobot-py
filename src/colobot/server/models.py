@@ -60,6 +60,10 @@ class User:
         self[password] = password
         self.profile.users.write()
 
+    @property
+    def login(self):
+        return self['login']
+
     def __getitem__(self, name):
         return self.entry[name]
 

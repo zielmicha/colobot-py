@@ -21,6 +21,8 @@ import g3d.camera_drivers
 
 import colobot.client
 
+from g3d.math import Vector2, Vector3
+
 class UIWindow(object):
     def __init__(self, client, game_name):
         self.client = client
@@ -41,7 +43,7 @@ class UIWindow(object):
         win.timer.add_ticker(self.tick)
         win.root.add(self.terrain.model)
         win.root.add(self.root)
-        g3d.camera_drivers.TopCameraDriver().install(win)
+        CameraDriver(self).install(win)
 
         win.loop()
 
@@ -65,3 +67,25 @@ class UIWindow(object):
             obj = self.objects_by_id[ident]
             obj.root.pos = position
             obj.root.rotation = rotation
+
+class CameraDriver(g3d.camera_drivers.CameraDriver):
+    def __init__(self, window):
+        super(CameraDriver, self).__init__()
+        self.camera.up = Vector3(0, 0, 1)
+        self.window = window
+        self._object = None
+
+    def install(self, window):
+        super(CameraDriver, self).install(window)
+        window.timer.add_ticker(self.tick)
+
+    def tick(self, delta):
+        if not self._object:
+            if self.window.objects_by_id: # race condition
+                self._object = self.window.objects_by_id[self.window.objects_by_id.keys()[0]]
+            pass # top view
+        else:
+            vec = Vector3(1, 0, 0)#self._object.root.rotation * Vector3(1, 0, 0)
+            translate = Vector3(0, 0, 30)
+            self.camera.eye = self._object.root.pos - vec * 80. + translate
+            self.camera.center = self._object.root.pos

@@ -164,7 +164,7 @@ class Keys:
 
 Keys.__dict__.update(pygame.__dict__)
 
-class EventHandler:
+class EventHandler(object):
     def motion(self, pos):
         pass
 

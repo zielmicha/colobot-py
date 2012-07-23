@@ -28,8 +28,14 @@ class Game(object):
         self.loader = loader
         self.objects = []
         self.global_lock = threading.RLock()
+        self.players = {}
 
         self.gravity = Vector3()
+
+    def get_player(self, name):
+        if name not in self.players:
+            self.players[name] = Player(self)
+        return self.players[name]
 
     def load_terrain(self, name):
         file = self.loader.index[name]()
@@ -44,19 +50,29 @@ class Game(object):
         with self.global_lock:
             return list(self.objects)
 
-    def create_static_object(self, name):
+    def create_static_object(self, player_name, name):
         # for debugging
+        player = self.get_player(player_name)
         model = g3d.model.read(loader=self.loader, name=name).clone()
         obj = Object(self, model)
+        obj.owner = player
         obj.position = Vector3(5, 5, 20)
-        obj.velocity = Vector3(1, 0, 0)
+        obj.velocity = Vector3(4, 0, 0)
         self.objects.append(obj)
+
+    def get_player_objects(self, player_name):
+        return [ object for object in self.objects in object.player == self.get_player(player_name) ]
+
+class Player(object):
+    def __init__(self, game):
+        self.game = game
 
 class Object(object):
     def __init__(self, game, model):
         self.game = game
         self.ident = random_string()
         self.model = model
+        self.owner = None
 
         self.position = Vector3()
         self.velocity = Vector3()
@@ -67,7 +83,8 @@ class Object(object):
         self.ground_area = Vector2(1, 1)
 
     def tick(self, time):
-        self.rotation += self.angular_velocity * time
+        # self.rotation *= self.angular_velocity ** time - TODO
+        self.rotation = self.rotation.normalized()
         self.position += self.velocity * time # + (self.game.gravity * time ** 2) / 2
         #self.velocity += self.game.gravity * time
 

@@ -150,15 +150,22 @@ class ConnectionHandler:
             channel.send_async(ident + data)
         return channel.id
 
-    def rpc_open_update_channel(self, name):
+    # ---- GAME -----
+
+    def rpc_open_update_channel(self, game_name):
         channel = self.socket.new_channel()
-        handler = UpdateChannelHandler(channel, self.server, self.server.games[name])
+        handler = UpdateChannelHandler(channel, self.server, self.server.games[game_name])
         multisock.async(handler.loop)
         return channel.id
 
     def rpc_create_static_object(self, game_name, model_name):
         self.user.check_game_permission(game_name, 'manage')
-        self.server.games[game_name].create_static_object(model_name)
+        self.server.games[game_name].create_static_object(self.user.login, model_name)
+
+    def rpc_get_user_objects(self, game_name):
+        return [ object.ident
+            for object in self.server.games[game_name].get_player_objects(self.user.login) ]
+
 
 class UpdateChannelHandler(object):
     def __init__(self, channel, server, game):
