@@ -41,7 +41,7 @@ class UIWindow(object):
         win.timer.add_ticker(self.tick)
         win.root.add(self.terrain.model)
         win.root.add(self.root)
-        g3d.camera_drivers.FreeCameraDriver().install(win)
+        g3d.camera_drivers.TopCameraDriver().install(win)
 
         win.loop()
 

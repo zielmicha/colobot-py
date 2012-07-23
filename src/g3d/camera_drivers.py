@@ -1,18 +1,18 @@
 # Copyright (c) 2012, Michal Zielinski <michal@zielinscy.org.pl>
 # All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
 # met:
-# 
+#
 #     * Redistributions of source code must retain the above copyright
 #     notice, this list of conditions and the following disclaimer.
-# 
+#
 #     * Redistributions in binary form must reproduce the above
 #     copyright notice, this list of conditions and the following
 #     disclaimer in the documentation and/or other materials provided
 #     with the distribution.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 # "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 # LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -36,7 +36,7 @@ from g3d.gl import Keys
 class CameraDriver(g3d.gl.EventHandler):
     def __init__(self):
         self.camera = g3d.gl.Camera()
-    
+
     def install(self, window):
         window.camera = self.camera
         window.event_handler = self
@@ -49,13 +49,13 @@ class LookAtCameraDriver(CameraDriver):
         self.last_pos = None
 
         assert look_at == Vector3(0, 0, 0), 'look_at != (0, 0, 0) not yet supported'
-        
+
         self.camera.center = look_at
         self.camera.eye = Vector2()
         self.spherical = Vector2(math.pi/4, math.pi/4)
 
         self._update()
-    
+
     def motion(self, pos):
         if self.last_pos is not None:
             delta = pos - self.last_pos
@@ -74,7 +74,7 @@ class LookAtCameraDriver(CameraDriver):
         )
         self.camera.up = Vector3(0, 1, 0)
         #(Quaternion.new_rotate_axis(-math.pi/2, Vector3(1, 1, 0)) * self.camera.eye).normalized()
-            
+
     def mouse_down(self, button, pos):
         self.last_pos = pos
 
@@ -99,7 +99,7 @@ class FreeCameraDriver(CameraDriver):
         self.speed = Vector3(0, 0, 0)
         self.angular_speed = 0
         self.angle = 0
-        
+
         self._update()
 
     def _update(self):
@@ -113,9 +113,9 @@ class FreeCameraDriver(CameraDriver):
     def tick(self, elapsed):
         self.angle += self.angular_speed * elapsed
         self.camera.eye += Quaternion.new_rotate_axis(self.angle, Vector3(0, 0, 1)) * self.speed * elapsed
-        
+
         self._update()
-        
+
     def key_down(self, key):
         if key in (Keys.K_LEFT, Keys.K_RIGHT):
             self.angular_speed = (1 if key == Keys.K_LEFT else -1) * 0.1
@@ -130,7 +130,46 @@ class FreeCameraDriver(CameraDriver):
         direction = dirs.get(key)
         if direction:
             self.speed = direction
-        
+
+    def key_up(self, key):
+        self.speed = Vector3()
+        self.angular_speed = 0
+
+
+class TopCameraDriver(CameraDriver):
+    def __init__(self):
+        CameraDriver.__init__(self)
+        self.camera.eye = Vector3(0, 0, 10)
+        self.camera.up = Vector3(0, 1, 0)
+        self.speed = Vector3(0, 0, 0)
+
+        self._update()
+
+    def _update(self):
+        self.camera.center = self.camera.eye - Vector3(0, 0, 1)
+
+    def install(self, window):
+        CameraDriver.install(self, window)
+        window.timer.add_ticker(self.tick)
+
+    def tick(self, elapsed):
+        self.camera.eye += self.speed
+
+        self._update()
+
+    def key_down(self, key):
+        dirs = {
+            Keys.K_UP: Vector3(0, 1, 0),
+            Keys.K_DOWN: Vector3(0, -1, 0),
+            Keys.K_RSHIFT: Vector3(0, 0, 1),
+            Keys.K_RCTRL: Vector3(0, 0, -1),
+            Keys.K_LEFT: Vector3(-1, 0, 0),
+            Keys.K_RIGHT: Vector3(1, 0, 0),
+        }
+        direction = dirs.get(key)
+        if direction:
+            self.speed = direction
+
     def key_up(self, key):
         self.speed = Vector3()
         self.angular_speed = 0
