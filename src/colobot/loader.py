@@ -21,14 +21,14 @@ import collections
 import pygame
 import g3d
 import g3d.loader
-from g3d import Vector3, Vector2
+from g3d.math import Vector3, Vector2, pi, Quaternion
 
 # ;;;;;;;;;;;;;;;; PUBLIC API ;;;;;;;;;;;;;;;;;
 
 class Loader(g3d.loader.Loader):
     '''
     Manages loading textures and Colobot .mod files.
-    '''     
+    '''
     def _find_texture(self, name):
         if name in self.index:
             return name
@@ -37,7 +37,7 @@ class Loader(g3d.loader.Loader):
             return name[:-4] + '.png'
 
         raise KeyError(name)
-        
+
     def _load_model(self, input):
         '''
         Loads Colobot model from input and returns g3d.TriangleObject.
@@ -47,7 +47,7 @@ class Loader(g3d.loader.Loader):
 
         def _uv((u, v)):
             return Vector2(u, 1 - v)
-        
+
         for t in _load_modfile_data(input):
             if t.tex_name:
                 texture = self.get_texture(t.tex_name)
@@ -89,7 +89,7 @@ def _load_modfile_data(input):
         tex_name = _strip_c_string(tex_name)
 
         V3=Vector3; V2=Vector2
-        
+
         yield _Triangle(
             V3(p1_x, p1_y, p1_z), V3(p2_x, p2_y, p2_z), V3(p3_x, p3_y, p3_z),
             V3(p1_nx, p1_ny, p1_nz), V3(p2_nx, p2_ny, p2_nz), V3(p3_nx, p3_ny, p3_nz),
@@ -102,25 +102,24 @@ def _load_modfile_data(input):
     if left:
         raise ValueError('garbage at the end of file (%d, %.2f per entry, entry size = %d)'
                          % (left, float(left)/total, struct.calcsize(struct_ModelTriangle)))
-    
+
 def _strip_c_string(s):
     if '\0' not in s:
         return s
     else:
         return s[:s.find('\0')]
-    
+
 def _read_unpack(f, code):
     size = struct.calcsize(code)
     return struct.unpack(code, f.read(size))
-    
+
 if __name__ == '__main__':
     import metafile
 
     f = metafile.MetaFile(metafile.cipher_keys['full'], open('colobot.data/colobot2.dat'))
 
     print list(sorted(f.entries))
-    
+
     for key in f.entries:
         inp = f.open(key)
         load_modfile(inp)
-    

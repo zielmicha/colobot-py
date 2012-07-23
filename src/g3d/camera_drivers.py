@@ -158,17 +158,18 @@ class TopCameraDriver(CameraDriver):
         self._update()
 
     def key_down(self, key):
+        key = {Keys.K_LCTRL: Keys.K_RCTRL, Keys.K_LSHIFT: Keys.K_RSHIFT}.get(key, key)
         dirs = {
             Keys.K_UP: Vector3(0, 1, 0),
             Keys.K_DOWN: Vector3(0, -1, 0),
-            Keys.K_RSHIFT: Vector3(0, 0, 1),
-            Keys.K_RCTRL: Vector3(0, 0, -1),
+            Keys.K_RSHIFT: Vector3(0, 0, 4),
+            Keys.K_RCTRL: Vector3(0, 0, -4),
             Keys.K_LEFT: Vector3(-1, 0, 0),
             Keys.K_RIGHT: Vector3(1, 0, 0),
         }
         direction = dirs.get(key)
         if direction:
-            self.speed = direction
+            self.speed = direction * (self.camera.eye.z ** 0.5 / 5.)
 
     def key_up(self, key):
         self.speed = Vector3()

@@ -1,18 +1,18 @@
 # Copyright (c) 2012, Michal Zielinski <michal@zielinscy.org.pl>
 # All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
 # met:
-# 
+#
 #     * Redistributions of source code must retain the above copyright
 #     notice, this list of conditions and the following disclaimer.
-# 
+#
 #     * Redistributions in binary form must reproduce the above
 #     copyright notice, this list of conditions and the following
 #     disclaimer in the documentation and/or other materials provided
 #     with the distribution.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 # "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 # LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -32,12 +32,12 @@ import pygame
 from g3d import Vector2, Vector3
 
 class Terrain(object):
-    def __init__(self, base_size=0.1):
+    def __init__(self, base_size=2):
         self.base_size = base_size
         self.heights = []
         self.model = None
 
-    def load_from_relief(self, file, height=2):
+    def load_from_relief(self, file, height=80):
         im = pygame.image.load(file)
         for x in xrange(im.get_width()):
             row = []
@@ -60,7 +60,7 @@ class Terrain(object):
             normal = (a - b).cross(c - a).normalized()
             nil = Vector2()
             return g3d.Triangle(a, b, c, normal, normal, normal, nil, nil, nil, None)
-        
+
         triangles = []
         for y in xrange(0, len(self.heights) - 1):
             row = self.heights[y]
@@ -75,5 +75,3 @@ class Terrain(object):
                 triangles.append(_create_triangle(c, d, b))
 
         self.model = g3d.TriangleObject(triangles)
-
-    

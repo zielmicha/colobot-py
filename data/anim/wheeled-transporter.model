@@ -1,2 +1,3 @@
-include name=wheeled.model
-include name=transporter.model
+group rotate=90,0,0
+        include name=wheeled.model
+        include name=transporter.model
