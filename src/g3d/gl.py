@@ -1,18 +1,18 @@
 # Copyright (c) 2012, Michal Zielinski <michal@zielinscy.org.pl>
 # All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
 # met:
-# 
+#
 #     * Redistributions of source code must retain the above copyright
 #     notice, this list of conditions and the following disclaimer.
-# 
+#
 #     * Redistributions in binary form must reproduce the above
 #     copyright notice, this list of conditions and the following
 #     disclaimer in the documentation and/or other materials provided
 #     with the distribution.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 # "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 # LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -48,7 +48,7 @@ class Window:
         self._init()
 
         pygame.display.set_mode((800, 640), pygame.HWSURFACE|pygame.OPENGL|pygame.DOUBLEBUF)
-        
+
         while True:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -67,7 +67,7 @@ class Window:
 
     def redraw(self):
         pass
-        
+
     def _init(self):
         pygame.init()
 
@@ -76,7 +76,7 @@ class Window:
             self.event_handler.key_up(key)
         elif state == pygame.KEYDOWN:
             self.event_handler.key_down(key)
-    
+
     def _mouse(self, button, state, x, y):
         if button == 4:
             self.event_handler.mouse_wheel(1)
@@ -100,7 +100,7 @@ class Window:
     def _mouse_wheel(self, button, dir, x, y):
         self.event_handler.mouse_wheel(dir)
         self.redraw()
-    
+
     def _display(self):
         glClearColor(1, 1, 1, 1)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -110,24 +110,24 @@ class Window:
 
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_NORMALIZE)
-                
+
         glLightModelfv(GL_LIGHT_MODEL_AMBIENT, (0.2, 0.2, 0.2))
 
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
         glFrustum(-1, 1, -1, 1, 5, 5000)
-        
+
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
-        
+
         glClear(GL_COLOR_BUFFER_BIT)
-        
+
         glColor3f(0.0,0.0,0.0)
         glPushMatrix()
 
         glLightfv(GL_LIGHT0, GL_DIFFUSE, (0.5, 0.5, 0.5, 1))
         glLightfv(GL_LIGHT0, GL_POSITION, (20, 20, 20, 1))
-        
+
         glEnable(GL_TEXTURE_2D)
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
@@ -135,7 +135,7 @@ class Window:
 
         self.camera._setup()
         self._draw_obj(self.root)
-        
+
         glPopMatrix()
         glFlush()
 
@@ -145,7 +145,7 @@ class Window:
         glPushMatrix()
         glTranslate(obj.pos.x, obj.pos.y, obj.pos.z)
         glMultMatrixd(obj.rotation.get_matrix()[:])
-        
+
         if isinstance(obj, g3d.TriangleObject):
             TrianglesRenderer.get(obj).draw_content()
         elif isinstance(obj, g3d.Container):
@@ -155,7 +155,7 @@ class Window:
         glPopMatrix()
 
 # ;;;;;;;;;;;;;;;;;;;; EVENTS ;;;;;;;;;;;;;;;;;;
-        
+
 RIGHT_BUTTON = 1
 LEFT_BUTTON  = 3
 
@@ -184,7 +184,7 @@ class EventHandler:
         pass
 
 # ;;;;;;;;;;;;;;;;;;; CAMERA ;;;;;;;;;;;;;;;;;;;
-    
+
 class Camera:
     def __init__(self):
         self.center = Vector3(0, 0, 0)
@@ -195,10 +195,10 @@ class Camera:
         GLU.gluLookAt(self.eye.x, self.eye.y, self.eye.z,
                       self.center.x, self.center.y, self.center.z,
                       self.up.x, self.up.y, self.up.z)
-        
+
 
 # ;;;;;;;;;;;;;;;;; RENDERERS ;;;;;;;;;;;;;;;;;;
-        
+
 class TrianglesRenderer:
     @classmethod
     def get(cls, triangles_object):
@@ -206,11 +206,11 @@ class TrianglesRenderer:
             triangles_object._gl_renderer = cls(triangles_object.triangles)
 
         return triangles_object._gl_renderer
-    
+
     def __init__(self, triangles):
         grouped_by_texture = []
         curr_group = None
-        
+
         last_tex = Ellipsis
         for t in sorted(triangles, key=lambda t: t.texture):
             if t.texture != last_tex:
@@ -224,7 +224,7 @@ class TrianglesRenderer:
             for l in it:
                 acum += l
             return acum
-        
+
         self._grouped_by_texture = []
         for texture, triangles in grouped_by_texture:
             vertices = numpy.array(sum_seq([ [t.a[:], t.b[:], t.c[:]] for t in triangles ]))
@@ -232,15 +232,15 @@ class TrianglesRenderer:
             uv = numpy.array(sum_seq([ [t.a_uv[:], t.b_uv[:], t.c_uv[:]] for t in triangles ]))
             assert len(vertices) == len(normals) == len(uv)
             self._grouped_by_texture.append((texture, normals, vertices, uv))
-            
+
     def draw_content(self):
         glEnableClientState(GL_VERTEX_ARRAY)
         glEnableClientState(GL_NORMAL_ARRAY)
         glEnableClientState(GL_TEXTURE_COORD_ARRAY)
-        
+
         for texture, normal, vertex, uv in self._grouped_by_texture:
             if g3d.options.enable_textures and texture:
-                glBindTexture(GL_TEXTURE_2D, texture.get_id())
+                glBindTexture(GL_TEXTURE_2D, get_texture_id(texture))
             else:
                 glBindTexture(GL_TEXTURE_2D, 0)
 
@@ -249,41 +249,13 @@ class TrianglesRenderer:
             glVertexPointer(3, GL_FLOAT, 0, vertex)
             glDrawArrays(GL_TRIANGLES, 0, len(vertex))
 
-# ;;;;;;;;;;;;;;;; TEXTURES ;;;;;;;;;;;;;;;;;;
-            
-def create_rgbx_texture(data, size):
-    return TextureWrapper(data, size)
-
-@g3d.serialize.serializable
-class TextureWrapper(object):
-    def __init__(self, data, size):
-        self.size = size
-        self.data = data
-        self._id = None
-
-    def _load(self):
-        w, h = self.size
-        self._id = glGenTextures(1)
-        glBindTexture(GL_TEXTURE_2D, self._id)
+def get_texture_id(texture):
+    if not hasattr(texture, '_gl_id'):
+        w, h = texture.size
+        texture._gl_id = glGenTextures(1)
+        glBindTexture(GL_TEXTURE_2D, texture._gl_id)
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
         glTexImage2D(GL_TEXTURE_2D, 0, 3, w, h, 0,
-                     GL_RGBA, GL_UNSIGNED_BYTE, self.data)
-        # del self.size, self.data
+                     GL_RGBA, GL_UNSIGNED_BYTE, texture.data)
 
-    def get_id(self):
-        if self._id == None:
-            self._load()
-        
-        return self._id
-
-    # -------------------------------------
-
-    serial_id = MODULE_SERIAL_ID, 1
-    serial_separate = True
-
-    def _serialize(self):
-        return (self.size, self.data)
-
-    @classmethod
-    def _unserialize(cls, size, data):
-        return cls(data, size)
+    return texture._gl_id

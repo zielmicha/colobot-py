@@ -149,6 +149,31 @@ class Container(Object):
         c.scale = scale
         return c
 
+
+# ;;;;;;;;;;;;;;;; TEXTURES ;;;;;;;;;;;;;;;;;;
+
+def create_rgbx_texture(data, size):
+    return TextureWrapper(data, size)
+
+@g3d.serialize.serializable
+class TextureWrapper(object):
+    def __init__(self, data, size):
+        self.size = size
+        self.data = data
+
+    # -------------------------------------
+
+    serial_id = MODULE_SERIAL_ID, 3
+    serial_separate = True
+
+    def _serialize(self):
+        return (self.size, self.data)
+
+    @classmethod
+    def _unserialize(cls, size, data):
+        return cls(data, size)
+
+
 class Timer:
     def __init__(self, min_interval=0):
         self._intervals = []

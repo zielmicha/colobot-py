@@ -1,18 +1,18 @@
 # Copyright (c) 2012, Michal Zielinski <michal@zielinscy.org.pl>
 # All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
 # met:
-# 
+#
 #     * Redistributions of source code must retain the above copyright
 #     notice, this list of conditions and the following disclaimer.
-# 
+#
 #     * Redistributions in binary form must reproduce the above
 #     copyright notice, this list of conditions and the following
 #     disclaimer in the documentation and/or other materials provided
 #     with the distribution.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 # "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 # LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -39,7 +39,7 @@ class Loader(object):
         self.index = {}
         self.texture_cache = {}
         self.model_cache = {}
-    
+
     def add_directory(self, path):
         ' Add content of directory to index. '
         for name in os.listdir(path):
@@ -57,9 +57,9 @@ class Loader(object):
         '''
         if name not in self.model_cache:
             self.model_cache[name] = self._load_model(self.index[name]())
-        
+
         return self.model_cache[name]
-    
+
     def get_texture(self, name):
         '''
         Loads texture named `name` from index using self._load_texture.
@@ -68,7 +68,7 @@ class Loader(object):
         '''
         if not self.enable_textures:
             return None
-        
+
         if name not in self.texture_cache:
             input = self.index[self._find_texture(name)]()
             self.texture_cache[name] = self._load_texture(input)
@@ -80,15 +80,15 @@ class Loader(object):
             return name
 
         raise KeyError(name)
-    
+
     def _load_texture(self, input):
         '''
         Creates GL texture from image supported by Pygame and returns its g3d.TextureWrapper.
         '''
         im = pygame.image.load(input)
         data = pygame.image.tostring(im, 'RGBX', True)
-        return g3d.gl.create_rgbx_texture(data, im.get_size())
-    
+        return g3d.create_rgbx_texture(data, im.get_size())
+
     def _load_model(self, input):
         ''' Loads model from input and returns g3d.TriangleObject
         - should be overriden by subclasses. '''

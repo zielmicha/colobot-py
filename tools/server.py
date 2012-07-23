@@ -48,7 +48,7 @@ args = parser.parse_args()
 logging.basicConfig(level=getattr(logging, args.logging.upper()))
 
 profile = colobot.server.models.Profile(os.path.expanduser(args.profile))
-loader = colobot.loader.Loader(enable_textures=False)
+loader = colobot.loader.Loader()
 
 for path in glob.glob('data/*'):
     if os.path.isdir(path):
