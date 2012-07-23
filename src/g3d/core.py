@@ -171,6 +171,8 @@ class TextureWrapper(object):
 
     @classmethod
     def _unserialize(cls, size, data):
+        if size[0] * size[1] * 4 != len(data):
+            raise RuntimeError('invalid size')
         return cls(data, size)
 
 

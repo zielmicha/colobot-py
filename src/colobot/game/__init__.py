@@ -47,7 +47,10 @@ class Game(object):
     def create_static_object(self, name):
         # for debugging
         model = g3d.model.read(loader=self.loader, name=name).clone()
-        self.objects.append(Object(self, model))
+        obj = Object(self, model)
+        obj.position = Vector3(5, 5, 20)
+        obj.velocity = Vector3(1, 0, 0)
+        self.objects.append(obj)
 
 class Object(object):
     def __init__(self, game, model):
@@ -61,10 +64,17 @@ class Object(object):
         self.rotation = Quaternion()
         self.angular_velocity = Quaternion()
 
+        self.ground_area = Vector2(1, 1)
+
     def tick(self, time):
         self.rotation += self.angular_velocity * time
         self.position += self.velocity * time # + (self.game.gravity * time ** 2) / 2
-        self.velocity += self.game.gravity * time
+        #self.velocity += self.game.gravity * time
+
+        self.check_ground()
+
+    def check_ground(self):
+        pass
 
 def random_string(len=9):
     return os.urandom(len).encode('base64')[:len].replace('+', 'A').replace('/', 'B')

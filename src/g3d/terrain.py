@@ -30,6 +30,7 @@ import g3d
 import pygame
 
 from g3d import Vector2, Vector3
+from g3d.math import floor, ceil
 
 class Terrain(object):
     def __init__(self, base_size=2):
@@ -50,6 +51,42 @@ class Terrain(object):
     def set_heights(self, heights):
         self.heights = heights
         self._update_model()
+
+    def get_height_at(self, pos):
+        def _intersect_plane(plane, x, y):
+            #
+            p1, p2, p3 = plane
+            # plane: Ax + By + Cz + D = 0
+            A, B, C = (p2 - p1).cross(p3 - p1)
+            D = -(A*p1.x + B*p1.y + C*p1.zx)
+            # z = (- D - Ax - By) / C
+            return (- D - A * x - B * y) / C
+
+        def _get(x, y):
+            height = (self.heights[y])[x]
+            return Vector3(x * self.base_size, y * self.base_size, height)
+
+        x, y = pos
+        if x < 0 or y < 0:
+            raise IndexError(pos)
+        if y / self.base_size >= len(self.heights):
+            raise IndexError(pos)
+        if x / self.base_size >= len(self.heights[0]):
+            raise IndexError(pos)
+
+        nx, ny = floor(x / self.base_size), floor(y / self.base_size)
+        a = _get(x, y)
+        b = _get(x + 1, y)
+        c = _get(x, y + 1)
+        d = _get(x + 1, y + 1)
+        rx, ry = pos - a
+
+        if rx + ry < 1:
+            plane = a, b, c
+        else:
+            plane = c, d, b
+
+        return _intersect_plane(plane, pos.x, pos.y)
 
     def _update_model(self):
         def _get(x, y):

@@ -139,7 +139,7 @@ class FreeCameraDriver(CameraDriver):
 class TopCameraDriver(CameraDriver):
     def __init__(self):
         CameraDriver.__init__(self)
-        self.camera.eye = Vector3(0, 0, 10)
+        self.camera.eye = Vector3(0, 0, 100)
         self.camera.up = Vector3(0, 1, 0)
         self.speed = Vector3(0, 0, 0)
 

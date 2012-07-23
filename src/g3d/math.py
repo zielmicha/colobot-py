@@ -1,18 +1,18 @@
 # Copyright (c) 2012, Michal Zielinski <michal@zielinscy.org.pl>
 # All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
 # met:
-# 
+#
 #     * Redistributions of source code must retain the above copyright
 #     notice, this list of conditions and the following disclaimer.
-# 
+#
 #     * Redistributions in binary form must reproduce the above
 #     copyright notice, this list of conditions and the following
 #     disclaimer in the documentation and/or other materials provided
 #     with the distribution.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 # "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 # LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -31,9 +31,14 @@ from __future__ import absolute_import, division
 
 import g3d.serialize
 
-from math import sin, cos, pi, acos, asin, tan, atan
+from math import sin, cos, pi, acos, asin, tan, atan, ceil as _ceil
 
 MODULE_SERIAL_ID = 1
+
+floor = int
+
+def ceil(i):
+    return int(_ceil(i))
 
 @g3d.serialize.serializable
 class Vector2(object):
@@ -47,7 +52,7 @@ class Vector2(object):
 
     def __hash__(self):
         return hash((self.x, self.y))
-        
+
     def __add__(self, other):
         assert isinstance(other, Vector2)
         return Vector2(self.x + other.x, self.y + other.y)
@@ -61,7 +66,7 @@ class Vector2(object):
 
     def __iter__(self):
         return iter([self.x, self.y])
-    
+
     def __getitem__(self, i):
         return [self.x, self.y][i]
 
@@ -94,17 +99,17 @@ class Vector3(object):
     def __mul__(self, a):
         assert isinstance(a, float)
         return Vector3(self.x * a, self.y * a, self.z * a)
-    
+
     def __eq__(self, o):
         if not isinstance(o, Vector3): return False
         return self.x == o.x and self.y == o.y and self.z == o.z
 
     def __hash__(self):
         return hash((self.x, self.y, self.z))
-        
+
     def __repr__(self):
         return 'Vector3(%.2f, %.2f, %.2f)' % (self.x, self.y, self.z)
-        
+
     def __add__(self, other):
         assert isinstance(other, Vector3)
         return Vector3(self.x + other.x, self.y + other.y, self.z + other.z)
@@ -149,21 +154,21 @@ class Quaternion(object):
         xy = self.x * self.y
         xz = self.x * self.z
         xw = self.x * self.w
-        
+
         yy = self.y * self.y
         yz = self.y * self.z
         yw = self.y * self.w
-        
+
         zz = self.z * self.z
         zw = self.z * self.w
-        
+
         tmp = [ # that's in row major
             1 - 2 * (yy + zz),  # a
             2 * (xy - zw),      # b
             2 * (xz + yw),      # c
             0,                  # d
             2 * (xy + zw),      # e
-            1 - 2 * (xx + zz),  # f 
+            1 - 2 * (xx + zz),  # f
             2 * (yz - xw),      # g
             0,                  # h
             2 * (xz - yw),      # i
@@ -185,21 +190,21 @@ class Quaternion(object):
         angle1 = 2 * acos(q.w)
         angle2 = (1 - q.w ** 2) ** 0.5
         return angle1, Vector3(q.x / angle2, q.y / angle2, q.z / angle2)
-    
+
     @classmethod
     def from_vector3(self, vec):
         return Quaternion(0, vec.x, vec.y, vec.z)
 
     def to_vector3(self):
         return Vector3(self.x, self.y, self.z)
-    
+
     def normalized(self):
         l = abs(self)
         return Quaternion(self.w/l, self.x/l, self.y/l, self.z/l)
 
     def conjugated(self):
         return Quaternion(self.w, -self.x, -self.y, -self.z)
-    
+
     def inversed(self):
         m = abs(self * self.conjugated())
         return self.conjugated() * Quaternion(1. / m, 0, 0, 0)
@@ -211,19 +216,19 @@ class Quaternion(object):
                           self.y + other.y,
                           self.z + other.z)
 
-    
+
     def __sub__(self, other):
         assert isinstance(other, Quaternion)
         return Quaternion(self.w - other.w,
                           self.x - other.x,
                           self.y - other.y,
                           self.z - other.z)
-    
+
     def __mul__(self, other):
         if isinstance(other, Quaternion):
             return Quaternion(
                 -self.x * other.x - self.y * other.y - self.z * other.z + self.w * other.w,
-                 self.x * other.w + self.y * other.z - self.z * other.y + self.w * other.x,    
+                 self.x * other.w + self.y * other.z - self.z * other.y + self.w * other.x,
                 -self.x * other.z + self.y * other.w + self.z * other.x + self.w * other.y,
                  self.x * other.y - self.y * other.x + self.z * other.w + self.w * other.z)
         elif isinstance(other, Vector3):
@@ -242,7 +247,7 @@ class Quaternion(object):
         Sin = sin(angle / 2)
         Cos = cos(angle / 2)
         return Quaternion(Cos, axis.x * Sin, axis.y * Sin, axis.z * Sin)
-    
+
     @classmethod
     def new_rotate_euler(cls, heading, attitude, bank):
         Hc = cos(heading / 2)
@@ -282,7 +287,7 @@ class Quaternion(object):
         # http://number-none.com/product/Understanding%20Slerp,%20Then%20Not%20Using%20It/
         q1 = q1.normalized()
         q2 = q2.normalized()
-        
+
         dot = q1.w * q2.w + q1.x * q2.x + q1.y * q2.y + q1.z * q2.z
         if dot > 0.9995:
             return q1 + t * (q1 - q2)
@@ -299,7 +304,7 @@ class Quaternion(object):
         theta_0 = acos(dot)
         theta = theta_0 * t
         q3 = (q2 - q1 * dot).normalized()
-        
+
         return q1 * cos(theta) + q3 * sin(theta)
 
     serial_id = MODULE_SERIAL_ID, 3

@@ -46,6 +46,7 @@ class UIWindow(object):
         win.loop()
 
     def tick(self, _):
+        # TODO: interpolate
         data = self.update_reader.get_new_updates()
         if not data:
             return
@@ -59,3 +60,8 @@ class UIWindow(object):
             model = self.objects_by_id[ident]
             del self.objects_by_id[ident]
             self.root.remove(model.root)
+
+        for ident, position, velocity, rotation, angular_velocity in updates:
+            obj = self.objects_by_id[ident]
+            obj.root.pos = position
+            obj.root.rotation = rotation

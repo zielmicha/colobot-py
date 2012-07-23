@@ -38,7 +38,10 @@ class Server:
         self.loader = loader
         self.serializer = g3d.serialize.Serializer()
         self.lock = threading.RLock()
+        self.game_ticker = g3d.Timer(min_interval=0.05)
         self.games = {}
+
+        multisock.async(lambda: (multisock.set_thread_name('games'), self.game_ticker.loop()))
 
     def _init(self, address):
         thread = multisock.SocketThread()
@@ -61,7 +64,8 @@ class Server:
         if name in self.games:
             raise KeyError(name)
 
-        self.games[name] = colobot.game.Game(self.loader)
+        game = self.games[name] = colobot.game.Game(self.loader)
+        self.game_ticker.add_ticker(game.tick)
 
 class ConnectionHandler:
     def __init__(self, server, profile, socket):
@@ -166,7 +170,7 @@ class UpdateChannelHandler(object):
 
     def loop(self):
         multisock.set_thread_name('update sender')
-        timer = g3d.Timer(min_interval=0.03)
+        timer = g3d.Timer(min_interval=0.1)
         timer.add_ticker(self.tick)
         timer.loop()
 
