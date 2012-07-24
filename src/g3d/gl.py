@@ -151,6 +151,8 @@ class Window:
         elif isinstance(obj, g3d.Container):
             for item in obj.objects:
                 self._draw_obj(item)
+        else:
+            raise TypeError(obj)
 
         glPopMatrix()
 

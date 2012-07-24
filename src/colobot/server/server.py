@@ -163,8 +163,8 @@ class ConnectionHandler:
         self.server.games[game_name].create_static_object(self.user.login, model_name)
 
     def rpc_get_user_objects(self, game_name):
-        return [ object.ident
-            for object in self.server.games[game_name].get_player_objects(self.user.login) ]
+        return [ object.ident for object in
+                 self.server.games[game_name].get_player_objects(self.user.login) ]
 
 
 class UpdateChannelHandler(object):
