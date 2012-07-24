@@ -52,6 +52,7 @@ class Object(object):
         obj = type(self)()
         obj.pos = self.pos
         obj.rotation = self.rotation
+        obj.scale = self.scale
         return obj
 
 @g3d.serialize.serializable
@@ -130,7 +131,7 @@ class Container(Object):
 
     def clone(self, clone_dict=None):
         new = Object.clone(self, clone_dict)
-        new.objects = [ obj.clone() for obj in self.objects ]
+        new.objects = [ obj.clone(clone_dict) for obj in self.objects ]
         return new
 
     # ------------------------------
