@@ -284,7 +284,7 @@ class StrSerializer:
 
 @serializer_for(float)
 class FloatSerializer(PrimitiveSerializer):
-    serial_struct = 'f'
+    serial_struct = 'd'
     serial_id = MODULE_BUILTIN, 6
 
 @serializer_for(type(None))

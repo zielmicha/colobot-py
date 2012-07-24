@@ -166,6 +166,9 @@ class ConnectionHandler:
         return [ object.ident for object in
                  self.server.games[game_name].get_player_objects(self.user.login) ]
 
+    def rpc_motor(self, game_name, bot_id, motor):
+        self.server.games[game_name].motor(self.user.login, bot_id, motor)
+
 
 class UpdateChannelHandler(object):
     def __init__(self, channel, server, game):

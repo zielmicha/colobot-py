@@ -12,6 +12,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+from __future__ import division
 
 import g3d
 import g3d.model
@@ -26,12 +27,16 @@ class Game(object):
     def __init__(self, loader):
         self.terrain = g3d.terrain.Terrain()
         self.loader = loader
-        self.objects = []
+        self.objects_by_id = {}
         self.global_lock = threading.RLock()
         self.players = {}
 
         self.gravity = Vector3(0, 0, -3)
         self._static_num = 0
+
+    @property
+    def objects(self):
+        return self.objects_by_id.itervalues()
 
     def get_player(self, name):
         if name not in self.players:
@@ -57,14 +62,24 @@ class Game(object):
         model = g3d.model.read(loader=self.loader, name=name).clone()
         obj = Object(self, model)
         obj.owner = player
-        obj.position = Vector3(120  + self._static_num * 10, 135, 210)
-        obj.velocity = Vector3(40, 40, 0)
-        obj.rotation = Quaternion.new_rotate_axis(pi / 4, Vector3(0, 0, 1))
+        obj.position = Vector3(120, 135 + self._static_num * 30, 210)
+        obj.velocity = Vector3(40, 0, 0)
+        obj.rotation = Quaternion.new_rotate_axis(0, Vector3(0, 0, 1))
         self._static_num += 1
-        self.objects.append(obj)
+        self.objects_by_id[obj.ident] = obj
 
     def get_player_objects(self, player_name):
-        return [ object for object in self.objects in object.player == self.get_player(player_name) ]
+        return [ object for object in self.objects
+                 if object.player == self.get_player(player_name) ]
+
+    def motor(self, player_name, bot_id, motor):
+        object = self.objects_by_id[bot_id]
+        if self.get_player(player_name) != object.owner:
+            raise NotAuthorizedError()
+        object.motor = motor
+
+class NotAuthorizedError(Exception):
+    ''' Raised when player tries to access robot of other player. '''
 
 class Player(object):
     def __init__(self, game):
@@ -83,13 +98,29 @@ class Object(object):
         self.rotation = Quaternion()
         self.angular_velocity = Quaternion()
 
+        self.mass = 1
+
+        self.motor = (0, 0)
+        self.motor_force = 1
+        self.motor_radius = 1
+
     def tick(self, time):
         # self.rotation *= self.angular_velocity ** time - TODO
         self.rotation = self.rotation.normalized()
         self.position += self.velocity * time # + (self.game.gravity * time ** 2) / 2
         self.velocity += self.game.gravity * time
 
+        self.calc_motor(time)
         self.check_ground()
+
+    def calc_motor(self, time):
+        f0, f1 = self.motor
+        f = f0 + f1 # net force
+        m = (f0 - f1) / self.motor_radius # torque
+        self.velocity += self.rotation * Vector3(f / self.mass, 0, 0)
+        j = self.mass # moment of intertia
+        self.angular_velocity *= Quaternion.new_rotate_axis(
+            m / self.mass, Vector3(0, 0, 1))
 
     def check_ground(self):
         center = Vector2(self.position.x, self.position.y)
@@ -106,7 +137,9 @@ class Object(object):
             height_y = self.game.terrain.get_height_at(center + Vector2(0, 1))
             bank = atan(height_y - height)
 
-            self.rotation = Quaternion.new_rotate_euler(heading, attitude, bank) # TODO: use angular_velocity instead
+            # TODO: use angular_velocity instead
+            self.rotation = Quaternion.new_rotate_euler(heading, attitude, bank)
+
 
 def random_string(len=9):
     return os.urandom(len).encode('base64')[:len].replace('+', 'A').replace('/', 'B')

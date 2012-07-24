@@ -18,7 +18,7 @@ import multisock.jsonrpc
 
 import hashlib
 import os
-
+import time
 import logging
 import StringIO
 
@@ -58,6 +58,7 @@ class Client:
     list_games = rpc_wrapper('list_games')
     load_terrain = rpc_wrapper('load_terrain')
     get_terrain = rpc_wrapper('get_terrain')
+    motor = rpc_wrapper('motor')
 
     def authenticate_with_session(self):
         ''' Tries to login with saved session.
@@ -96,7 +97,8 @@ class Client:
             f.write(uid)
 
     def fetch_objects(self, idents):
-        idents = [ ident for ident in idents if ident not in self.unserializer.cache ]
+        idents = list(set( ident for ident in idents
+                      if ident not in self.unserializer.cache ))
         if not idents:
             return
         logging.debug('fetching %s', [ id.encode('hex') for id in idents ])
@@ -116,17 +118,20 @@ class Client:
             yield packet[ :SHA1_LENGTH], packet[SHA1_LENGTH: ]
 
     def get_dependencies(self, idents):
-        return [ i.decode('hex') for i in self.rpc.call.get_dependencies([ i.encode('hex') for i in idents ]) ]
+        return [ i.decode('hex')
+                 for i in self.rpc.call.get_dependencies([ i.encode('hex')
+                                                           for i in idents ]) ]
 
     def open_update_channel(self, name):
         return self.socket.get_channel(self.rpc.call.open_update_channel(name))
+
 
 class UpdateReader:
     def __init__(self, client, channel):
         self.channel = channel
         self.client = client
 
-        self.unserialized = multisock.Operation() # TODO: add max queue size
+        self.unserialized = multisock.Operation()
         multisock.async(self.loop)
 
     def loop(self):
@@ -141,16 +146,24 @@ class UpdateReader:
         blob = self.channel.recv()
         data = self.client.unserializer.load_from(StringIO.StringIO(blob))
 
-        time, new, deleted, updates = data
+        update_time, new, deleted, updates = data
 
         self.client.fetch_objects([ model for ident, model in new ])
 
-        self.unserialized.dispatch((
+        val = (
                 time, # TODO: synchronize time with server
                 [ (ident, self.client.unserializer.load(model)) for ident, model in new ],
                 deleted,
                 updates
-        ))
+        )
+
+        if self.unserialized._queue.qsize() > 3:
+            # FIXME: use of private varibles
+            # TODO: use UDP and avoid this
+            # skip update if client is not fast enough
+            return
+        self.unserialized.dispatch(val)
+
 
     def get_new_updates(self):
         ''' Retruns None if new updates haven\'t arrived yet. Never blocks. '''

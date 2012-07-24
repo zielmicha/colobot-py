@@ -13,6 +13,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+from __future__ import division
 
 import g3d
 import g3d.terrain
@@ -21,6 +22,7 @@ import g3d.camera_drivers
 
 import colobot.client
 
+from g3d.gl import Keys
 from g3d.math import Vector2, Vector3, Quaternion
 
 class UIWindow(object):
@@ -43,10 +45,14 @@ class UIWindow(object):
         win.timer.add_ticker(self.tick)
         win.root.add(self.terrain.model)
         win.root.add(self.root)
-        CameraDriver(self).install(win)
+        CameraDriver(self, self.client).install(win)
         #g3d.camera_drivers.TopCameraDriver().install(win)
 
         win.loop()
+
+    def remote_call(self, name, *args, **kwargs):
+        ' Calls method of client passing game_name as first argument. '
+        return getattr(self.client, name)(self.game_name, *args, **kwargs)
 
     def tick(self, _):
         # TODO: interpolate
@@ -56,8 +62,9 @@ class UIWindow(object):
 
         server_time, new, deleted, updates = data
         for ident, model in new:
-            self.objects_by_id[ident] = model.clone()
-            self.root.add(self.objects_by_id[ident].root)
+            model = self.objects_by_id[ident] = model.clone()
+            model.ident = ident # TODO: do something else
+            self.root.add(model.root)
 
         for ident in deleted:
             model = self.objects_by_id[ident]
@@ -70,15 +77,20 @@ class UIWindow(object):
             obj.root.rotation = rotation
 
 class CameraDriver(g3d.camera_drivers.CameraDriver):
-    def __init__(self, window):
+    def __init__(self, window, client):
         super(CameraDriver, self).__init__()
         self.camera.up = Vector3(0, 0, 1)
         self.window = window
+        self.client = client
         self._object = None
         self._ordered_objects = []
 
         self.dist_behind = 240.
         self.dist_above = 120.
+
+        self.turn = 0
+        self.direction = 0
+        self._last_motor = Ellipsis
 
     def install(self, window):
         super(CameraDriver, self).install(window)
@@ -90,16 +102,54 @@ class CameraDriver(g3d.camera_drivers.CameraDriver):
                 self._get_next_object()
             pass # top view
         else:
-            heading, attitude, bank = self._object.root.rotation.get_euler()
-            attitude_q = Quaternion.new_rotate_euler(0, attitude * 2, 0) # why *2 ??
-            vec = attitude_q * Vector3(1, 0, 0)
-            self.camera.eye = self._object.root.pos - (vec * self.dist_behind
-                                                       ) + Vector3(0, 0, self.dist_above)
-            self.camera.center = self._object.root.pos
+            self._handle_keys()
+            self._position_camera()
+
+    def _position_camera(self):
+        heading, attitude, bank = self._object.root.rotation.get_euler()
+        attitude_q = Quaternion.new_rotate_euler(0, attitude * 2, 0) # why *2 ??
+        vec = attitude_q * Vector3(1, 0, 0)
+        self.camera.eye = self._object.root.pos - (
+            vec * self.dist_behind) + Vector3(0, 0, self.dist_above)
+        self.camera.center = self._object.root.pos
+
+    def _handle_keys(self):
+        if not self._object:
+            return
+        motor = self._get_motor()
+        if motor != self._last_motor:
+            self.window.remote_call('motor', self._object.ident, motor) # TODO: async
+            self._last_motor = motor
+
+    def _get_motor(self):
+        if self.direction:
+            if self.turn == -1:
+                return self.direction / 2, self.direction
+            elif self.turn == 1:
+                return self.direction, self.direction / 2
+            else:
+                return self.direction, self.direction
+        else:
+            if self.turn == -1:
+                return 0, 1
+            elif self.turn == 1:
+                return 1, 0
+            else:
+                return 0, 0
 
     def key_down(self, key):
-        if key == g3d.gl.Keys.K_TAB:
+        if key == Keys.K_TAB:
             self._get_next_object()
+        elif key in (Keys.K_LEFT, Keys.K_RIGHT):
+            self.turn = -1 if key == Keys.K_LEFT else 1
+        elif key in (Keys.K_UP, Keys.K_DOWN):
+            self.direction = -1 if key == Keys.K_DOWN else 1
+
+    def key_up(self, key):
+        if key in (Keys.K_LEFT, Keys.K_RIGHT):
+            self.turn = 0
+        elif key in (Keys.K_UP, Keys.K_DOWN):
+            self.direction = 0
 
     def _get_next_object(self):
         current = set(self.window.objects_by_id.values())
@@ -116,4 +166,5 @@ class CameraDriver(g3d.camera_drivers.CameraDriver):
             self._object = None
         else:
             index = (current_index + 1) % len(self._ordered_objects)
+            self._last_motor = Ellipsis
             self._object = self._ordered_objects[index]
