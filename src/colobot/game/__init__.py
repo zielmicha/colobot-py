@@ -17,7 +17,7 @@ import g3d
 import g3d.model
 import g3d.terrain
 
-from g3d.math import Vector2, Vector3, Quaternion, atan
+from g3d.math import Vector2, Vector3, Quaternion, atan, pi
 
 import threading
 import os
@@ -57,7 +57,8 @@ class Game(object):
         obj = Object(self, model)
         obj.owner = player
         obj.position = Vector3(120, 135, 210)
-        obj.velocity = Vector3(50, 0, 0)
+        obj.velocity = Vector3(40, 40, 0)
+        obj.rotation = Quaternion.new_rotate_axis(pi / 4, Vector3(0, 0, 1))
         self.objects.append(obj)
 
     def get_player_objects(self, player_name):
@@ -94,15 +95,16 @@ class Object(object):
         if self.position.z <= height:
             self.position.z = height
 
+            # y, z, x
+            heading, attitude, bank = self.rotation.get_euler()
+
             height_x = self.game.terrain.get_height_at(center + Vector2(1, 0))
-            angle_x = atan(height_x - height)
-            d_rotation = Quaternion.new_rotate_axis(-angle_x, Vector3(0, 1, 0)) # TODO: update not override
+            heading = -atan(height_x - height)
 
             height_y = self.game.terrain.get_height_at(center + Vector2(0, 1))
-            angle_y = atan(height_y - height)
-            d_rotation *= Quaternion.new_rotate_axis(angle_y, Vector3(1, 0, 0))
+            bank = atan(height_y - height)
 
-            self.rotation = d_rotation # TODO: use angular_velocity instead
+            self.rotation = Quaternion.new_rotate_euler(heading, attitude, bank) # TODO: use angular_velocity instead
 
 def random_string(len=9):
     return os.urandom(len).encode('base64')[:len].replace('+', 'A').replace('/', 'B')

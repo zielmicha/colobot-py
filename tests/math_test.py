@@ -10,11 +10,20 @@ from g3d.math import *
 
 class TestQuaternion(unittest.TestCase):
     # TODO: create much more tests
-    
+
     def test_op(self):
         self.assertAlmostEqual(Quaternion(1, 1, 1, 1).__abs__(), 2)
         self.assertAlmostEqual(Quaternion(5, 0, 0, 0).__abs__(), 5)
-    
+
+    def test_get_euler(self):
+        l = [Quaternion(1, 1, 1, 1), Quaternion(5, 0, 0, 0),
+             Quaternion.new_rotate_euler(pi / 2, 0, 0)]
+        for q in l:
+            q = q.normalized()
+            euler = q.get_euler()
+            q2 = Quaternion.new_rotate_euler(*euler)
+            self.assertQuaternionEqual(q, q2)
+
     def test_inverse(self):
         l = [(1, 0, 0, 0),
              (0, 1, 0, 0),
@@ -32,7 +41,7 @@ class TestQuaternion(unittest.TestCase):
         self.check_get_matrix((1, 1, 1, 0))
         self.check_get_matrix((0, 1, 1, 0))
         self.check_get_matrix((0, 0, 0, 0))
-        
+
         for i in xrange(1000):
             q = (random.random(), random.random(), random.random(), random.random())
             self.check_get_matrix(q)
@@ -45,7 +54,7 @@ class TestQuaternion(unittest.TestCase):
 
         for i, a1, a2 in zip(xrange(16), m1, m2):
             self.assertAlmostEqual(a1, a2, msg='component %s' % 'abcdefghijklmnop'[i])
-    
+
     def check_inverse(self, q):
         self.assertQuaternionEqual(Quaternion(1, 0, 0, 0), q * q.inversed())
 

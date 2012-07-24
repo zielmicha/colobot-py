@@ -31,7 +31,7 @@ from __future__ import absolute_import, division
 
 import g3d.serialize
 
-from math import sin, cos, pi, acos, asin, tan, atan, ceil as _ceil
+from math import sin, cos, pi, acos, asin, tan, atan, atan2, ceil as _ceil
 
 MODULE_SERIAL_ID = 1
 
@@ -240,6 +240,31 @@ class Quaternion(object):
 
     def __abs__(self):
         return (self.x**2 + self.y**2 + self.z**2 + self.w**2) ** 0.5
+
+    def __iter__(self):
+        return iter([self.w, self.x, self.y, self.z])
+
+    def get_euler(self):
+        # http://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
+        # http://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToEuler/
+        w, x, y, z = self
+        test = x*y + z*w
+	if test > 0.499:
+		heading = 2 * atan2(x, w);
+		attitude = pi/2
+		bank = 0
+	elif test < -0.499:
+		heading = -2 * atan2(x, w);
+		attitude = -pi/2
+		bank = 0
+        else:
+            sqx = x*x
+            sqy = y*y
+            sqz = z*z
+            heading = atan2(2*y*w-2*x*z, 1 - 2*sqy - 2*sqz)
+            attitude = asin(2*test)
+            bank = atan2(2*x*w-2*y*z, 1 - 2*sqx - 2*sqz)
+        return heading, attitude, bank
 
     @classmethod
     def new_rotate_axis(cls, angle, axis):
