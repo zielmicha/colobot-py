@@ -44,6 +44,7 @@ class UIWindow(object):
         win.root.add(self.terrain.model)
         win.root.add(self.root)
         CameraDriver(self).install(win)
+        #g3d.camera_drivers.TopCameraDriver().install(win)
 
         win.loop()
 
@@ -55,8 +56,8 @@ class UIWindow(object):
 
         server_time, new, deleted, updates = data
         for ident, model in new:
-            self.objects_by_id[ident] = model
-            self.root.add(model.root)
+            self.objects_by_id[ident] = model.clone()
+            self.root.add(self.objects_by_id[ident].root)
 
         for ident in deleted:
             model = self.objects_by_id[ident]
