@@ -31,7 +31,7 @@ from __future__ import absolute_import, division
 
 import g3d.serialize
 
-from math import sin, cos, pi, acos, asin, tan, atan, atan2, ceil as _ceil
+from math import sin, cos, pi, acos, asin, tan, atan, atan2, e, log, ceil as _ceil
 
 MODULE_SERIAL_ID = 1
 
@@ -98,8 +98,16 @@ class Vector3(object):
                        self.x * other.y - self.y * other.x)
 
     def __mul__(self, a):
-        assert isinstance(a, float)
+        assert isinstance(a, (float, int, long))
         return Vector3(self.x * a, self.y * a, self.z * a)
+
+    __rmul__ = __mul__
+
+    def __div__(self, a):
+        assert isinstance(a, (float, int, long))
+        return Vector3(self.x / a, self.y / a, self.z / a)
+
+    __truediv__ = __div__
 
     def __eq__(self, o):
         if not isinstance(o, Vector3):
@@ -239,13 +247,44 @@ class Quaternion(object):
                 +self.z * other.w + self.w * other.z)
         elif isinstance(other, Vector3):
             return (self * Quaternion.from_vector3(other)).to_vector3()
-        elif isinstance(other, float):
+        elif isinstance(other, (float, int, long)):
             return Quaternion(self.w * other,
                               self.x * other,
                               self.y * other,
                               self.z * other)
         else:
             return NotImplemented
+
+    def __rmul__(self, other):
+        if isinstance(other, (float, int, long)):
+            return Quaternion(self.w * other,
+                              self.x * other,
+                              self.y * other,
+                              self.z * other)
+        else:
+            return NotImplemented
+
+    def __pow__(self, exp):
+        return (self.ln() * exp).exp()
+
+    def exp(self):
+        a = self.w
+        vec = self.to_vector3()
+        norm = abs(vec)
+        if norm < 0.001:
+            return Quaternion(e ** a)
+        return (e ** a) * (Quaternion(cos(norm)) +
+                           Quaternion.from_vector3(vec / norm) * sin(norm))
+
+    def ln(self):
+        self_norm = abs(self)
+        a = self.w
+        vec = self.to_vector3()
+        norm = abs(vec)
+        if norm < 0.001:
+            return Quaternion(log(a))
+        return Quaternion(log(self_norm), 0, 0, 0) \
+            + Quaternion.from_vector3(vec / norm) * acos(a / self_norm)
 
     def __abs__(self):
         return (self.x**2 + self.y**2 + self.z**2 + self.w**2) ** 0.5

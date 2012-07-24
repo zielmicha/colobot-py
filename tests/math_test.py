@@ -15,6 +15,16 @@ class TestQuaternion(unittest.TestCase):
         self.assertAlmostEqual(Quaternion(1, 1, 1, 1).__abs__(), 2)
         self.assertAlmostEqual(Quaternion(5, 0, 0, 0).__abs__(), 5)
 
+    def test_power(self):
+        l = [Quaternion(1, 1, 1, 1), Quaternion(5, 0, 0, 0),
+             Quaternion.new_rotate_euler(pi / 2, 0, 0),
+             Quaternion(0.1, 2, 3, 4), Quaternion(0.01, 1, 1, 0)]
+        for q in l:
+            q = q.normalized()
+            self.assertQuaternionEqual(q * q, q ** 2)
+            self.assertQuaternionEqual(q * q * q, q ** 3)
+            self.assertQuaternionEqual(q * q * q * q * q, q ** 5)
+
     def test_get_euler(self):
         l = [Quaternion(1, 1, 1, 1), Quaternion(5, 0, 0, 0),
              Quaternion.new_rotate_euler(pi / 2, 0, 0)]
