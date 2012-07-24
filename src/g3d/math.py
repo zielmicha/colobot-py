@@ -200,6 +200,8 @@ class Quaternion(object):
         q = self.normalized()
         angle1 = 2 * acos(q.w)
         angle2 = (1 - q.w ** 2) ** 0.5
+        if angle2 < 0.001:
+            return 0, Vector3(1, 0, 0)
         return angle1, Vector3(q.x / angle2, q.y / angle2, q.z / angle2)
 
     @classmethod
@@ -265,6 +267,8 @@ class Quaternion(object):
             return NotImplemented
 
     def __pow__(self, exp):
+        if (self.x ** 2 + self.y ** 2 + self.z ** 2) < 0.001:
+            return self.w ** exp
         return (self.ln() * exp).exp()
 
     def exp(self):

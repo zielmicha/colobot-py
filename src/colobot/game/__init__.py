@@ -21,6 +21,7 @@ import g3d.terrain
 from g3d.math import Vector2, Vector3, Quaternion, atan, pi
 
 import threading
+import logging
 import os
 
 class Game(object):
@@ -92,11 +93,13 @@ class Object(object):
         self.model = model
         self.owner = None
 
+        self.is_on_ground = False
+
         self.position = Vector3()
         self.velocity = Vector3()
 
         self.rotation = Quaternion()
-        self.angular_velocity = Quaternion()
+        self.angular_velocity = Vector3()
 
         self.mass = 1
 
@@ -105,31 +108,42 @@ class Object(object):
         self.motor_radius = 1
 
     def tick(self, time):
-        # self.rotation *= self.angular_velocity ** time - TODO
+        if abs(self.angular_velocity) > 0.001:
+            q = Quaternion.new_rotate_axis(abs(self.angular_velocity) * 0.01,
+                                       self.angular_velocity.normalized())
+        else:
+            q = Quaternion()
+        self.rotation *= q
         self.rotation = self.rotation.normalized()
-        self.position += self.velocity * time # + (self.game.gravity * time ** 2) / 2
+        self.position += self.velocity * time + (self.game.gravity * time ** 2) / 2
         self.velocity += self.game.gravity * time
 
         self.calc_motor(time)
-        self.check_ground()
+        self.check_ground(time)
 
     def calc_motor(self, time):
         f0, f1 = self.motor
         f = f0 + f1 # net force
-        m = (f0 - f1) / self.motor_radius # torque
+        m = (f1 - f0) / self.motor_radius # torque
         self.velocity += self.rotation * Vector3(f / self.mass, 0, 0)
         j = self.mass # moment of intertia
-        self.angular_velocity *= Quaternion.new_rotate_axis(
-            m / self.mass, Vector3(0, 0, 1))
+        self.angular_velocity += (m / j) *  Vector3(0, 0, 1)
 
-    def check_ground(self):
+    def check_ground(self, time):
         center = Vector2(self.position.x, self.position.y)
         height = self.game.terrain.get_height_at(center)
         if self.position.z <= height:
+            if not self.is_on_ground:
+                logging.debug('dups!')
+            self.is_on_ground = True
             self.position.z = height
 
             self.adjust_rotation(center, height)
-            self.apply_friction()
+            self.apply_friction(time)
+        else:
+            if self.is_on_ground:
+                logging.debug('up!')
+            self.is_on_ground = False
 
     def adjust_rotation(self, center, height):
         # y, z, x
@@ -144,14 +158,22 @@ class Object(object):
         # TODO: use angular_velocity instead
         self.rotation = Quaternion.new_rotate_euler(heading, attitude, bank)
 
-    def apply_friction(self):
+    def apply_friction(self, time):
         kinetic_friction = \
-            self.game.terrain.get_kinetic_friction(self.position, self.velocity)
+            self.game.terrain.get_kinetic_friction(self.position, self.velocity) * time
         if kinetic_friction > abs(self.velocity):
             self.velocity = Vector3(0, 0, 0)
         else:
             self.velocity -= (self.velocity.normalized() * kinetic_friction)
 
+        angular_friction = \
+            self.game.terrain.get_angular_friction(self.position,
+                                                   self.angular_velocity) * time
+
+        if abs(self.angular_velocity) < angular_friction:
+            self.angular_velocity = Vector3()
+        else:
+            self.angular_velocity -= self.angular_velocity.normalized() * angular_friction
 
 class Terrain(g3d.terrain.Terrain):
     def __init__(self):
@@ -159,11 +181,10 @@ class Terrain(g3d.terrain.Terrain):
 
     def get_kinetic_friction(self, pos, velocity):
         ' Returns value of linear deacceleration caused by friction. '
-        return abs(velocity) * 0.15 # arbitrary constant
+        return abs(velocity) * 3 # arbitrary constant
 
     def get_angular_friction(self, pos, angular_velocity):
-        angle, axis = angular_velocity.get_angle_axis()
-        return angle * 0.1 # arbitrary constant
+        return 9 # arbitrary constant
 
 def random_string(len=9):
     return os.urandom(len).encode('base64')[:len].replace('+', 'A').replace('/', 'B')

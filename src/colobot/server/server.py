@@ -194,7 +194,7 @@ class UpdateChannelHandler(object):
 
         updates_time = time.time()
         for obj in objects:
-            updates.append((obj.ident, obj.position, obj.velocity, obj.rotation, obj.angular_velocity))
+            updates.append((obj.ident, obj.position, obj.velocity, obj.rotation, None))
 
         data = (
                 updates_time,

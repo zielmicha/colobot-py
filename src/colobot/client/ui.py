@@ -107,7 +107,8 @@ class CameraDriver(g3d.camera_drivers.CameraDriver):
 
     def _position_camera(self):
         heading, attitude, bank = self._object.root.rotation.get_euler()
-        attitude_q = Quaternion.new_rotate_euler(0, attitude * 2, 0) # why *2 ??
+        attitude_q = Quaternion()
+#Quaternion.new_rotate_euler(0, attitude * 2, 0) # why *2 ??
         vec = attitude_q * Vector3(1, 0, 0)
         self.camera.eye = self._object.root.pos - (
             vec * self.dist_behind) + Vector3(0, 0, self.dist_above)
