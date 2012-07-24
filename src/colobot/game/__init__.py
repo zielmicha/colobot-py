@@ -31,6 +31,7 @@ class Game(object):
         self.players = {}
 
         self.gravity = Vector3(0, 0, -3)
+        self._static_num = 0
 
     def get_player(self, name):
         if name not in self.players:
@@ -56,9 +57,10 @@ class Game(object):
         model = g3d.model.read(loader=self.loader, name=name).clone()
         obj = Object(self, model)
         obj.owner = player
-        obj.position = Vector3(120, 135, 210)
+        obj.position = Vector3(120  + self._static_num * 10, 135, 210)
         obj.velocity = Vector3(40, 40, 0)
         obj.rotation = Quaternion.new_rotate_axis(pi / 4, Vector3(0, 0, 1))
+        self._static_num += 1
         self.objects.append(obj)
 
     def get_player_objects(self, player_name):

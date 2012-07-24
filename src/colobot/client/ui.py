@@ -21,7 +21,7 @@ import g3d.camera_drivers
 
 import colobot.client
 
-from g3d.math import Vector2, Vector3
+from g3d.math import Vector2, Vector3, Quaternion
 
 class UIWindow(object):
     def __init__(self, client, game_name):
@@ -74,6 +74,10 @@ class CameraDriver(g3d.camera_drivers.CameraDriver):
         self.camera.up = Vector3(0, 0, 1)
         self.window = window
         self._object = None
+        self._ordered_objects = []
+
+        self.dist_behind = 240.
+        self.dist_above = 120.
 
     def install(self, window):
         super(CameraDriver, self).install(window)
@@ -82,10 +86,33 @@ class CameraDriver(g3d.camera_drivers.CameraDriver):
     def tick(self, delta):
         if not self._object:
             if self.window.objects_by_id: # FIXME: race condition
-                self._object = self.window.objects_by_id[self.window.objects_by_id.keys()[0]]
+                self._get_next_object()
             pass # top view
         else:
-            vec = Vector3(1, 0, 0)#self._object.root.rotation * Vector3(1, 0, 0)
-            translate = Vector3(0, 0, 120)
-            self.camera.eye = self._object.root.pos - vec * 240. + translate
+            heading, attitude, bank = self._object.root.rotation.get_euler()
+            attitude_q = Quaternion.new_rotate_euler(0, attitude * 2, 0) # why *2 ??
+            vec = attitude_q * Vector3(1, 0, 0)
+            self.camera.eye = self._object.root.pos - (vec * self.dist_behind
+                                                       ) + Vector3(0, 0, self.dist_above)
             self.camera.center = self._object.root.pos
+
+    def key_down(self, key):
+        if key == g3d.gl.Keys.K_TAB:
+            self._get_next_object()
+
+    def _get_next_object(self):
+        current = set(self.window.objects_by_id.values())
+        current_index = (self._ordered_objects.index(self._object)
+                         if self._object in self._ordered_objects else -1)
+        self._ordered_objects = [ o for o in self._ordered_objects if o in current ]
+        if len(self._ordered_objects) != len(current):
+            old = set(self._ordered_objects)
+            for o in current:
+                if o not in old:
+                    self._ordered_objects.append(o)
+
+        if not self._ordered_objects:
+            self._object = None
+        else:
+            index = (current_index + 1) % len(self._ordered_objects)
+            self._object = self._ordered_objects[index]
