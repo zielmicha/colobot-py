@@ -47,7 +47,8 @@ class Vector2(object):
         self.y = y
 
     def __eq__(self, o):
-        if not isinstance(o, Vector2): return False
+        if not isinstance(o, Vector2):
+            return False
         return self.x == o.x and self.y == o.y
 
     def __hash__(self):
@@ -101,7 +102,8 @@ class Vector3(object):
         return Vector3(self.x * a, self.y * a, self.z * a)
 
     def __eq__(self, o):
-        if not isinstance(o, Vector3): return False
+        if not isinstance(o, Vector3):
+            return False
         return self.x == o.x and self.y == o.y and self.z == o.z
 
     def __hash__(self):
@@ -162,28 +164,29 @@ class Quaternion(object):
         zz = self.z * self.z
         zw = self.z * self.w
 
-        tmp = [ # that's in row major
-            1 - 2 * (yy + zz),  # a
-            2 * (xy - zw),      # b
-            2 * (xz + yw),      # c
-            0,                  # d
-            2 * (xy + zw),      # e
-            1 - 2 * (xx + zz),  # f
-            2 * (yz - xw),      # g
-            0,                  # h
-            2 * (xz - yw),      # i
-            2 * (yz + xw),      # j
-            1 - 2 * (xx + yy),  # k
-            0, # l
-            0, # m
-            0, # n
-            0, # o
-            1, # p
-            ]
-        return [ tmp[0], tmp[4], tmp[8], tmp[12], # and in column major that opengl wants
-                 tmp[1], tmp[5], tmp[9], tmp[13],
-                 tmp[2], tmp[6], tmp[10], tmp[14],
-                 tmp[3], tmp[7], tmp[11], tmp[15]]
+        tmp = [  # that's in row major
+                 1 - 2 * (yy + zz),  # a
+                 2 * (xy - zw),      # b
+                 2 * (xz + yw),      # c
+                 0,                  # d
+                 2 * (xy + zw),      # e
+                 1 - 2 * (xx + zz),  # f
+                 2 * (yz - xw),      # g
+                 0,                  # h
+                 2 * (xz - yw),      # i
+                 2 * (yz + xw),      # j
+                 1 - 2 * (xx + yy),  # k
+                 0,  # l
+                 0,  # m
+                 0,  # n
+                 0,  # o
+                 1,  # p
+                 ]
+        # and in column major that opengl wants
+        return [tmp[0], tmp[4], tmp[8], tmp[12],
+                tmp[1], tmp[5], tmp[9], tmp[13],
+                tmp[2], tmp[6], tmp[10], tmp[14],
+                tmp[3], tmp[7], tmp[11], tmp[15]]
 
     def get_angle_axis(self):
         q = self.normalized()
@@ -216,7 +219,6 @@ class Quaternion(object):
                           self.y + other.y,
                           self.z + other.z)
 
-
     def __sub__(self, other):
         assert isinstance(other, Quaternion)
         return Quaternion(self.w - other.w,
@@ -227,14 +229,21 @@ class Quaternion(object):
     def __mul__(self, other):
         if isinstance(other, Quaternion):
             return Quaternion(
-                -self.x * other.x - self.y * other.y - self.z * other.z + self.w * other.w,
-                 self.x * other.w + self.y * other.z - self.z * other.y + self.w * other.x,
-                -self.x * other.z + self.y * other.w + self.z * other.x + self.w * other.y,
-                 self.x * other.y - self.y * other.x + self.z * other.w + self.w * other.z)
+                -self.x * other.x - self.y * other.y
+                -self.z * other.z + self.w * other.w,
+                +self.x * other.w + self.y * other.z
+                -self.z * other.y + self.w * other.x,
+                -self.x * other.z + self.y * other.w
+                +self.z * other.x + self.w * other.y,
+                +self.x * other.y - self.y * other.x
+                +self.z * other.w + self.w * other.z)
         elif isinstance(other, Vector3):
             return (self * Quaternion.from_vector3(other)).to_vector3()
         elif isinstance(other, float):
-            return Quaternion(self.w * other, self.x * other, self.y * other, self.z * other)
+            return Quaternion(self.w * other,
+                              self.x * other,
+                              self.y * other,
+                              self.z * other)
         else:
             return NotImplemented
 
@@ -246,17 +255,17 @@ class Quaternion(object):
 
     def get_euler(self):
         # http://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
-        # http://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToEuler/
+        # http://www.euclideanspace.com/maths/geometry/rotation/conversions/quaternionToEuler/
         w, x, y, z = self
         test = x*y + z*w
-	if test > 0.499:
-		heading = 2 * atan2(x, w);
-		attitude = pi/2
-		bank = 0
-	elif test < -0.499:
-		heading = -2 * atan2(x, w);
-		attitude = -pi/2
-		bank = 0
+        if test > 0.499:
+            heading = 2 * atan2(x, w)
+            attitude = pi/2
+            bank = 0
+        elif test < -0.499:
+            heading = -2 * atan2(x, w)
+            attitude = -pi/2
+            bank = 0
         else:
             sqx = x*x
             sqy = y*y

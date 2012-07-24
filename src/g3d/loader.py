@@ -44,9 +44,15 @@ class Loader(object):
         ' Add content of directory to index. '
         for name in os.listdir(path):
             if name.endswith('.gz'):
-                self.index[name[:-3]] = functools.partial(gzip.open, os.path.join(path, name), 'rb')
+                func = functools.partial(gzip.open,
+                                         os.path.join(path, name),
+                                         'rb')
+                name = name[:-3]
             else:
-                self.index[name] = functools.partial(open, os.path.join(path, name), 'rb')
+                func = functools.partial(open,
+                                         os.path.join(path, name),
+                                         'rb')
+            self.index[name] = func
 
     def read_file(self, name):
         return self.index[name]().read()
@@ -83,7 +89,8 @@ class Loader(object):
 
     def _load_texture(self, input):
         '''
-        Creates GL texture from image supported by Pygame and returns its g3d.TextureWrapper.
+        Creates GL texture from image supported by Pygame and
+        returns its g3d.TextureWrapper.
         '''
         im = pygame.image.load(input)
         data = pygame.image.tostring(im, 'RGBX', True)
