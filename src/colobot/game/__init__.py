@@ -25,13 +25,13 @@ import os
 
 class Game(object):
     def __init__(self, loader):
-        self.terrain = g3d.terrain.Terrain()
+        self.terrain = Terrain()
         self.loader = loader
         self.objects_by_id = {}
         self.global_lock = threading.RLock()
         self.players = {}
 
-        self.gravity = Vector3(0, 0, -3)
+        self.gravity = Vector3(0, 0, -7)
         self._static_num = 0
 
     @property
@@ -128,18 +128,42 @@ class Object(object):
         if self.position.z <= height:
             self.position.z = height
 
-            # y, z, x
-            heading, attitude, bank = self.rotation.get_euler()
+            self.adjust_rotation(center, height)
+            self.apply_friction()
 
-            height_x = self.game.terrain.get_height_at(center + Vector2(1, 0))
-            heading = -atan(height_x - height)
+    def adjust_rotation(self, center, height):
+        # y, z, x
+        heading, attitude, bank = self.rotation.get_euler()
 
-            height_y = self.game.terrain.get_height_at(center + Vector2(0, 1))
-            bank = atan(height_y - height)
+        height_x = self.game.terrain.get_height_at(center + Vector2(1, 0))
+        heading = -atan(height_x - height)
 
-            # TODO: use angular_velocity instead
-            self.rotation = Quaternion.new_rotate_euler(heading, attitude, bank)
+        height_y = self.game.terrain.get_height_at(center + Vector2(0, 1))
+        bank = atan(height_y - height)
 
+        # TODO: use angular_velocity instead
+        self.rotation = Quaternion.new_rotate_euler(heading, attitude, bank)
+
+    def apply_friction(self):
+        kinetic_friction = \
+            self.game.terrain.get_kinetic_friction(self.position, self.velocity)
+        if kinetic_friction > abs(self.velocity):
+            self.velocity = Vector3(0, 0, 0)
+        else:
+            self.velocity -= (self.velocity.normalized() * kinetic_friction)
+
+
+class Terrain(g3d.terrain.Terrain):
+    def __init__(self):
+        super(Terrain, self).__init__()
+
+    def get_kinetic_friction(self, pos, velocity):
+        ' Returns value of linear deacceleration caused by friction. '
+        return abs(velocity) * 0.15 # arbitrary constant
+
+    def get_angular_friction(self, pos, angular_velocity):
+        angle, axis = angular_velocity.get_angle_axis()
+        return angle * 0.1 # arbitrary constant
 
 def random_string(len=9):
     return os.urandom(len).encode('base64')[:len].replace('+', 'A').replace('/', 'B')
