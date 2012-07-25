@@ -46,6 +46,13 @@ class Vector2(object):
         self.x = x
         self.y = y
 
+    def normalized(self):
+        l = abs(self)
+        return Vector2(self.x / l, self.y / l)
+
+    def __abs__(self):
+        return (self.x ** 2 + self.y ** 2) ** 0.5
+
     def __eq__(self, o):
         if not isinstance(o, Vector2):
             return False
@@ -136,6 +143,10 @@ class Vector3(object):
 
     def __getitem__(self, i):
         return [self.x, self.y, self.z][i]
+
+    @staticmethod
+    def angle_between(a, b):
+        return asin(abs(a.normalized().cross(b.normalized())))
 
     serial_id = MODULE_SERIAL_ID, 2
     serial_struct = 'fff'

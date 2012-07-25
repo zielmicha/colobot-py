@@ -32,7 +32,7 @@ class Game(object):
         self.global_lock = threading.RLock()
         self.players = {}
 
-        self.gravity = Vector3(0, 0, -7)
+        self.gravity = Vector3(0, 0, -20)
         self._static_num = 0
 
     @property
@@ -139,6 +139,7 @@ class Object(object):
             self.position.z = height
 
             self.adjust_rotation(center, height)
+            self.rotate_velocity(center, height)
             self.apply_friction(time)
         else:
             if self.is_on_ground:
@@ -156,7 +157,21 @@ class Object(object):
         bank = atan(height_y - height)
 
         # TODO: use angular_velocity instead
-        self.rotation = Quaternion.new_rotate_euler(heading, attitude, bank)
+        d_rotation = Quaternion.new_rotate_euler(heading, attitude, bank)
+
+        self.rotation = d_rotation
+
+    def rotate_velocity(self, center, height):
+        ''' Make sure that velocity is not pointed underground. '''
+        velocity_projection = Vector2(self.velocity.x, self.velocity.y)
+        if abs(velocity_projection) < 0.001:
+            return
+        velocity_projection = velocity_projection.normalized()
+        height_v = self.game.terrain.get_height_at(center + velocity_projection)
+        ground_vector = Vector3(velocity_projection.x, velocity_projection.y, height_v - height).normalized()
+        velocity_angle = Vector3.angle_between(ground_vector, self.velocity)
+        if velocity_angle < 0:
+            self.velocity = abs(self.velocity) * self.ground_vector
 
     def apply_friction(self, time):
         kinetic_friction = \
