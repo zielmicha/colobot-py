@@ -75,6 +75,18 @@ class Vector2(object):
     def __iter__(self):
         return iter([self.x, self.y])
 
+    def __mul__(self, other):
+        assert isinstance(other, (float, int, long))
+        return Vector2(self.x * other, self.y * other)
+
+    __rmul__ = __mul__
+
+    def __div__(self, other):
+        assert isinstance(other, (float, int, long))
+        return Vector2(self.x / other, self.y / other)
+
+    __truediv__ = __div__
+
     def __getitem__(self, i):
         return [self.x, self.y][i]
 

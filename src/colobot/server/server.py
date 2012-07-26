@@ -41,7 +41,8 @@ class Server:
         self.game_ticker = g3d.Timer(min_interval=0.05)
         self.games = {}
 
-        multisock.async(lambda: (multisock.set_thread_name('games'), self.game_ticker.loop()))
+        multisock.async(lambda: (multisock.set_thread_name('games'),
+                                 self.game_ticker.loop()))
 
     def _init(self, address):
         thread = multisock.SocketThread()
@@ -128,13 +129,6 @@ class ConnectionHandler:
         self.user.check_permission('create-games')
         self.server.create_game(name)
 
-    def rpc_load_terrain(self, game_name, name):
-        self.user.check_game_permission(game_name, 'manage')
-        self.server.games[game_name].load_terrain(name)
-
-    def rpc_get_terrain(self, game_name):
-        return self.server.games[game_name].terrain.heights
-
     def rpc_get_dependencies(self, objects_sha1):
         l = []
         for object_sha1 in objects_sha1:
@@ -152,6 +146,14 @@ class ConnectionHandler:
 
     # ---- GAME -----
 
+    def rpc_load_terrain(self, game_name, name):
+        self.user.check_game_permission(game_name, 'manage')
+        self.server.games[game_name].load_terrain(name)
+
+    def rpc_get_terrain(self, game_name):
+        terrain = self.server.games[game_name].terrain
+        return terrain.base_size, tuple(terrain.center), terrain.heights
+
     def rpc_open_update_channel(self, game_name):
         channel = self.socket.new_channel()
         handler = UpdateChannelHandler(channel, self.server, self.server.games[game_name])
@@ -168,6 +170,10 @@ class ConnectionHandler:
 
     def rpc_motor(self, game_name, bot_id, motor):
         self.server.games[game_name].motor(self.user.login, bot_id, motor)
+
+    def rpc_load_scene(self, game_name, scene_name):
+        self.user.check_game_permission(game_name, 'manage')
+        self.server.games[game_name].load_scene(scene_name)
 
 
 class UpdateChannelHandler(object):

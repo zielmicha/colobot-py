@@ -37,7 +37,9 @@ class UIWindow(object):
         self.objects_by_id = {}
 
     def setup(self):
-        heights = self.client.get_terrain(self.game_name)
+        base_size, center, heights = self.client.get_terrain(self.game_name)
+        self.terrain.base_size = base_size
+        self.terrain.center = Vector2(*center)
         self.terrain.set_heights(heights)
 
     def loop(self):
@@ -85,8 +87,8 @@ class CameraDriver(g3d.camera_drivers.CameraDriver):
         self._object = None
         self._ordered_objects = []
 
-        self.dist_behind = 240.
-        self.dist_above = 120.
+        self.dist_behind = 12
+        self.dist_above = 6
 
         self.turn = 0
         self.direction = 0

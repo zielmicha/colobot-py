@@ -59,6 +59,7 @@ class Client:
     load_terrain = rpc_wrapper('load_terrain')
     get_terrain = rpc_wrapper('get_terrain')
     motor = rpc_wrapper('motor')
+    load_scene = rpc_wrapper('load_scene')
 
     def authenticate_with_session(self):
         ''' Tries to login with saved session.

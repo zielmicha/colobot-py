@@ -32,7 +32,7 @@ class Game(object):
         self.global_lock = threading.RLock()
         self.players = {}
 
-        self.gravity = Vector3(0, 0, -20)
+        self.gravity = Vector3(0, 0, -12)
         self._static_num = 0
 
     @property
@@ -47,6 +47,11 @@ class Game(object):
     def load_terrain(self, name):
         file = self.loader.index[name]()
         self.terrain.load_from_relief(file)
+
+    def load_scene(self, name):
+        import colobot.game.scene_file # TODO
+        file = self.loader.index[name]()
+        colobot.game.scene_file.load(file, self)
 
     def tick(self, time):
         with self.global_lock:
@@ -67,6 +72,9 @@ class Game(object):
         obj.velocity = Vector3(40, 0, 0)
         obj.rotation = Quaternion.new_rotate_axis(0, Vector3(0, 0, 1))
         self._static_num += 1
+        self.add_object(obj)
+
+    def add_object(self, obj):
         self.objects_by_id[obj.ident] = obj
 
     def get_player_objects(self, player_name):
@@ -75,8 +83,8 @@ class Game(object):
 
     def motor(self, player_name, bot_id, motor):
         object = self.objects_by_id[bot_id]
-        if self.get_player(player_name) != object.owner:
-            raise NotAuthorizedError()
+        #if self.get_player(player_name) != object.owner:
+        #    raise NotAuthorizedError()
         object.motor = motor
 
 class NotAuthorizedError(Exception):
@@ -104,8 +112,9 @@ class Object(object):
         self.mass = 1
 
         self.motor = (0, 0)
-        self.motor_force = 1
-        self.motor_radius = 1
+        self.motor_force = 0.001
+        # motor_radius ~ torque
+        self.motor_radius = 5
 
     def tick(self, time):
         if abs(self.angular_velocity) > 0.001:
@@ -124,7 +133,7 @@ class Object(object):
     def calc_motor(self, time):
         f0, f1 = self.motor
         f = f0 + f1 # net force
-        m = (f1 - f0) / self.motor_radius # torque
+        m = (f1 - f0) * self.motor_radius # torque
         self.velocity += self.rotation * Vector3(f / self.mass, 0, 0)
         j = self.mass # moment of intertia
         self.angular_velocity += (m / j) *  Vector3(0, 0, 1)
@@ -168,7 +177,9 @@ class Object(object):
             return
         velocity_projection = velocity_projection.normalized()
         height_v = self.game.terrain.get_height_at(center + velocity_projection)
-        ground_vector = Vector3(velocity_projection.x, velocity_projection.y, height_v - height).normalized()
+        ground_vector = Vector3(velocity_projection.x,
+                                velocity_projection.y,
+                                height_v - height).normalized()
         velocity_angle = Vector3.angle_between(ground_vector, self.velocity)
         if velocity_angle < 0:
             self.velocity = abs(self.velocity) * self.ground_vector
@@ -196,10 +207,10 @@ class Terrain(g3d.terrain.Terrain):
 
     def get_kinetic_friction(self, pos, velocity):
         ' Returns value of linear deacceleration caused by friction. '
-        return abs(velocity) * 3 # arbitrary constant
+        return abs(velocity) * 30 # arbitrary constant
 
     def get_angular_friction(self, pos, angular_velocity):
-        return 9 # arbitrary constant
+        return 20 # arbitrary constant
 
 def random_string(len=9):
     return os.urandom(len).encode('base64')[:len].replace('+', 'A').replace('/', 'B')

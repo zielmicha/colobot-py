@@ -1,18 +1,18 @@
 # Copyright (c) 2012, Michal Zielinski <michal@zielinscy.org.pl>
 # All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
 # met:
-# 
+#
 #     * Redistributions of source code must retain the above copyright
 #     notice, this list of conditions and the following disclaimer.
-# 
+#
 #     * Redistributions in binary form must reproduce the above
 #     copyright notice, this list of conditions and the following
 #     disclaimer in the documentation and/or other materials provided
 #     with the distribution.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 # "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 # LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -43,12 +43,13 @@ def read_into(loader, name, model, group):
 def _load_group(loader, tree, model, group):
     if not tree:
         return
-    
+
     def handle_part():
-        model_name, name, translate, rotate = _get_options(options, 'model', 'name', 'translate', 'rotate')
+        model_name, name, translate, rotate, scale = \
+            _get_options(options, 'model', 'name', 'translate', 'rotate', 'scale')
         obj = g3d.wrap(loader.get_model(model_name))
         group.add(obj)
-        _bind_trans(obj, translate, rotate)
+        _bind_trans(obj, translate, rotate, scale)
         if name:
             model.objects[name] = obj
 
@@ -57,9 +58,10 @@ def _load_group(loader, tree, model, group):
         read_into(loader, name, model, group)
 
     def handle_group():
-        name, translate, rotate = _get_options(options, 'name', 'translate', 'rotate')
+        name, translate, rotate, scale = \
+            _get_options(options, 'name', 'translate', 'rotate', 'scale')
         obj = g3d.Container()
-        _bind_trans(obj, translate, rotate)
+        _bind_trans(obj, translate, rotate, scale)
         _load_group(loader, children, model, obj)
         group.add(obj)
         if name:
@@ -70,7 +72,7 @@ def _load_group(loader, tree, model, group):
         animation = g3d.model.AnimationGroup()
         model.animations[name] = animation
         _load_anim(loader, children, model, animation)
-    
+
     def assert_no_children():
         if children:
             raise SyntaxError('command %s shouldn\'t have any children' % command)
@@ -95,7 +97,7 @@ def _load_anim(loader, tree, model, animation):
     def assert_no_children():
         if children:
             raise SyntaxError('command %s shouldn\'t have any children' % command)
-    
+
     for item, children in tree:
         command, options = _parse_line(item)
 
@@ -118,9 +120,10 @@ def _float_list(s):
         return [0., 0., 0.]
     return map(float, s.split(','))
 
-def _bind_trans(obj, translate, rotate):
+def _bind_trans(obj, translate, rotate, scale):
     obj.pos = Vector3(*_float_list(translate))
     obj.rotation = _parse_rotate(rotate)
+    obj.scale = float(scale) if scale else 1
 
 def _parse_rotate(s):
     rotate = _float_list(s)
@@ -130,14 +133,14 @@ def _parse_rotate(s):
     else:
         x, y, z = [ i / 180. * math.pi for i in rotate ]
         return Quaternion.new_rotate_euler(y, z, x)
-    
+
 def _get_options(options, *names):
     for key in options:
         if key not in names:
             raise SyntaxError('invalid option name %s' % key)
 
     return [ options.get(name) for name in names ]
-        
+
 def _parse_line(text):
     parts = text.split()
     command = parts[0]
@@ -151,7 +154,7 @@ def _parse_line(text):
         options[name] = value
 
     return command, options
-        
+
 def _parse(data):
     # normalize whitespace
     data = data.replace('\t', ' ' * 4)
@@ -185,7 +188,7 @@ def _parse(data):
             groups_by_level[current_level].append(group)
             group.append(line)
             current_level = spaces_count
-        
+
     return _pair_captions(root)
 
 def _pair_captions(l):

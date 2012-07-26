@@ -37,9 +37,15 @@ class Terrain(object):
         self.base_size = base_size
         self.heights = []
         self.model = None
+        self.center = Vector2()
 
     def load_from_relief(self, file, height=1200):
-        im = pygame.image.load(file)
+        if isinstance(file, g3d.TextureWrapper):
+            im = pygame.image.fromstring(file.data, file.size, 'RGBX')
+        else:
+            im = pygame.image.load(file)
+
+        self.center = Vector2(im.get_width(), im.get_height()) / 2 * self.base_size
         for x in xrange(im.get_width()):
             row = []
             self.heights.append(row)
@@ -65,6 +71,8 @@ class Terrain(object):
         def _get(x, y):
             height = (self.heights[y])[x]
             return Vector3(x * self.base_size, y * self.base_size, height)
+
+        pos = pos + self.center
 
         x, y = pos
         if x < 0 or y < 0:
@@ -112,3 +120,4 @@ class Terrain(object):
                 triangles.append(_create_triangle(c, d, b))
 
         self.model = g3d.TriangleObject(triangles)
+        self.model.pos = -1 * Vector3(self.center.x, self.center.y, 0)

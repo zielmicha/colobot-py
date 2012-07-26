@@ -144,6 +144,8 @@ class Window:
 
         glPushMatrix()
         glTranslate(obj.pos.x, obj.pos.y, obj.pos.z)
+        if obj.scale != 1:
+            glScale(obj.scale, obj.scale, obj.scale)
         glMultMatrixd(obj.rotation.get_matrix()[:])
 
         if isinstance(obj, g3d.TriangleObject):
