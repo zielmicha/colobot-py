@@ -164,7 +164,8 @@ class CameraDriver(g3d.camera_drivers.CameraDriver):
 
 
     def _get_next_object(self):
-        current = set(self.window.objects_by_id.values())
+        current = set(self.window.objects_by_id.get(ident)
+                      for ident in self.window.remote_call('get_user_objects') ) # TODO: async, FIXME: race condition
         current_index = (self._ordered_objects.index(self._object)
                          if self._object in self._ordered_objects else -1)
         self._ordered_objects = [ o for o in self._ordered_objects if o in current ]

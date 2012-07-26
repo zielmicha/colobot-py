@@ -25,10 +25,35 @@ def register_object(clazz):
     objects[clazz.__name__] = clazz
     return clazz
 
+class StaticObject(colobot.game.Object):
+    selectable = False
+
+    mass = 9999999
+    motor_force = 0
+    motor_radius = 0
+
+class Building(StaticObject):
+    selectable = True
+
+class Bot(colobot.game.Object):
+    selectable = True
+
+    mass = 1
+    motor_force = 30
+    motor_radius = 0.5
+
 @register_object
-class WheeledGrabber(colobot.game.Object):
+class WheeledGrabber(Bot):
     model = 'wheeled-transporter.model'
 
-#@register_object
-class Barrier1(colobot.game.Object):
+@register_object
+class Barrier1(StaticObject):
     model = 'barrier1.model'
+
+@register_object
+class BotFactory(Building):
+    model = 'factory.model'
+
+@register_object
+class ResearchCenter(Building):
+    model = 'research.model'

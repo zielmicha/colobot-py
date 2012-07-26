@@ -1,0 +1,4 @@
+group rotate=90,0,0
+      part model=search1.mod
+      part model=search2.mod translate=0,13,0
+      part model=search3.mod translate=0,4,0 rotate=0,0,35

@@ -90,13 +90,14 @@ def _load_modfile_data(input):
 
         V3=Vector3; V2=Vector2
 
-        yield _Triangle(
-            V3(p1_x, p1_y, p1_z), V3(p2_x, p2_y, p2_z), V3(p3_x, p3_y, p3_z),
-            V3(p1_nx, p1_ny, p1_nz), V3(p2_nx, p2_ny, p2_nz), V3(p3_nx, p3_ny, p3_nz),
-            V2(p1_u, p1_v), V2(p2_u, p2_v), V2(p3_u, p3_v),
-            state=state,
-            tex_name=tex_name, min=min, max=max, tex_num=tex_num_2,
-        )
+        viewing_distance = 10
+        if min < viewing_distance < max:
+            yield _Triangle(
+                V3(p1_x, p1_y, p1_z), V3(p2_x, p2_y, p2_z), V3(p3_x, p3_y, p3_z),
+                V3(p1_nx, p1_ny, p1_nz), V3(p2_nx, p2_ny, p2_nz), V3(p3_nx, p3_ny, p3_nz),
+                V2(p1_u, p1_v), V2(p2_u, p2_v), V2(p3_u, p3_v),
+                state=state,
+                tex_name=tex_name, min=min, max=max, tex_num=tex_num_2)
 
     left = len(input.read())
     if left:

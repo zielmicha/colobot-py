@@ -83,7 +83,7 @@ class Game(object):
 
     def get_player_objects(self, player_name):
         return [ object for object in self.objects
-                 if object.player == self.get_player(player_name) ]
+                 if object.owner == self.get_player(player_name) ]
 
     def motor(self, player_name, bot_id, motor):
         object = self.objects_by_id[bot_id]
@@ -99,10 +99,13 @@ class Player(object):
         self.game = game
 
 class Object(object):
+    model_scale = 0.2
+
     def __init__(self, game, model):
         self.game = game
         self.ident = random_string()
         self.model = model
+        self.model.root.scale = self.model_scale
         self.owner = None
 
         self.is_on_ground = False
@@ -113,12 +116,7 @@ class Object(object):
         self.rotation = Quaternion()
         self.angular_velocity = Vector3()
 
-        self.mass = 1
-
         self.motor = (0, 0)
-        self.motor_force = 30
-        # motor_radius ~ torque
-        self.motor_radius = 0.5
 
     def tick(self, time):
         if abs(self.angular_velocity) > 0.001:

@@ -41,10 +41,12 @@ def handleCreateObject(game, pos, dir, type, cmdline=None, script1=None,
     except KeyError:
         return
 
-    player = None
     model = g3d.model.read(loader=game.loader, name=clazz.model).clone()
     obj = clazz(game, model)
-    obj.owner = player
+    if clazz.selectable: #and selectable:
+        obj.owner = game.get_player('root') # TODO
+    else:
+        obj.owner = None
     obj.position = Vector3(*pos)
     obj.rotation = get_rotation_quaternion(dir)
     game.add_object(obj)
