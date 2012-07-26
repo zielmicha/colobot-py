@@ -26,6 +26,7 @@ import g3d.serialize
 
 # make sure that serializer knows all used modules
 import g3d.model
+import colobot.game
 
 CACHE_PATH = os.path.expanduser('~/.cache/colobot')
 
@@ -57,7 +58,6 @@ class Client:
     create_game = rpc_wrapper('create_game')
     list_games = rpc_wrapper('list_games')
     load_terrain = rpc_wrapper('load_terrain')
-    get_terrain = rpc_wrapper('get_terrain')
     motor = rpc_wrapper('motor')
     load_scene = rpc_wrapper('load_scene')
 
@@ -109,6 +109,11 @@ class Client:
             logging.debug('adding %s', sha1.encode('hex'))
             self.unserializer.add(sha1, data)
         logging.debug('done')
+
+    def get_terrain(self, game_name):
+        ident = self.rpc.call.get_terrain(game_name).decode('hex')
+        self.fetch_objects([ident])
+        return self.unserializer.load(ident)
 
     def get_resources(self, idents):
         channel_id = self.rpc.call.get_resources([ i.encode('hex') for i in idents ])

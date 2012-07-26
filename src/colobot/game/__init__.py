@@ -19,10 +19,13 @@ import g3d.model
 import g3d.terrain
 
 from g3d.math import Vector2, Vector3, Quaternion, atan, pi
+import g3d.serialize
 
 import threading
 import logging
 import os
+
+MODULE_SERIAL_ID = 101
 
 class Game(object):
     def __init__(self, loader):
@@ -202,6 +205,7 @@ class Object(object):
         else:
             self.angular_velocity -= self.angular_velocity.normalized() * angular_friction
 
+@g3d.serialize.serializable
 class Terrain(g3d.terrain.Terrain):
     def __init__(self):
         super(Terrain, self).__init__()
@@ -212,6 +216,11 @@ class Terrain(g3d.terrain.Terrain):
 
     def get_angular_friction(self, pos, angular_velocity):
         return 20 # arbitrary constant
+
+    # ----------------------
+
+    serial_id = MODULE_SERIAL_ID, 1
+
 
 def random_string(len=9):
     return os.urandom(len).encode('base64')[:len].replace('+', 'A').replace('/', 'B')

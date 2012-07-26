@@ -37,10 +37,7 @@ class UIWindow(object):
         self.objects_by_id = {}
 
     def setup(self):
-        base_size, center, heights = self.client.get_terrain(self.game_name)
-        self.terrain.base_size = base_size
-        self.terrain.center = Vector2(*center)
-        self.terrain.set_heights(heights)
+        self.terrain = self.client.get_terrain(self.game_name)
 
     def loop(self):
         win = g3d.gl.Window()

@@ -28,15 +28,21 @@ from __future__ import division
 
 import g3d
 import pygame
+import struct
 
 from g3d import Vector2, Vector3
 from g3d.math import floor, ceil
+import g3d.serialize
 
+MODULE_SERIAL_ID = 5
+
+@g3d.serialize.serializable
 class Terrain(object):
     def __init__(self, base_size=30):
         self.base_size = base_size
         self.heights = []
         self.model = None
+        self.texture = None # TODO: more flexible texturing
         self.center = Vector2()
 
     def load_from_relief(self, file, height=1200):
@@ -101,7 +107,7 @@ class Terrain(object):
         def _create_triangle(a, b, c):
             normal = (a - b).cross(c - a).normalized()
             nil = Vector2()
-            return g3d.Triangle(a, b, c, normal, normal, normal, nil, nil, nil, None)
+            return g3d.Triangle(a, b, c, normal, normal, normal, nil, nil, nil, self.texture)
 
         triangles = []
         for y in xrange(0, len(self.heights) - 1):
@@ -118,3 +124,27 @@ class Terrain(object):
 
         self.model = g3d.TriangleObject(triangles)
         self.model.pos = -1 * Vector3(self.center.x, self.center.y, 0)
+
+    # ----------------------
+
+    serial_id = MODULE_SERIAL_ID, 1
+
+    def _serialize(self):
+        heights = ''.join([ ''.join([ struct.pack('!f', h) for h in row ]) for row in self.heights ])
+        return heights, len(self.heights), len(self.heights[0]), self.base_size, self.texture, self.center
+
+    @classmethod
+    def _unserialize(cls, heights, height, width, base_size, texture, center):
+        self = cls()
+        for y in xrange(height):
+            row = []
+            for x in xrange(width):
+                pos = (y * width + x) * 4
+                val, = struct.unpack('!f', heights[pos: pos+4])
+                row.append(val)
+            self.heights.append(row)
+        self.base_size = base_size
+        self.texture = texture
+        self.center = center
+        self._update_model()
+        return self

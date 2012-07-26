@@ -152,7 +152,7 @@ class ConnectionHandler:
 
     def rpc_get_terrain(self, game_name):
         terrain = self.server.games[game_name].terrain
-        return terrain.base_size, tuple(terrain.center), terrain.heights
+        return self.server.serializer.add(terrain).encode('hex')
 
     def rpc_open_update_channel(self, game_name):
         channel = self.socket.new_channel()

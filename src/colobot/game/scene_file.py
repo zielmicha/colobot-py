@@ -28,6 +28,7 @@ def handleTerrainRelief(game, image, factor):
     HEIGHT_CONST = 80
     image = image.split('\\')[-1]
     texture = game.loader.get_texture(image)
+    #game.terrain.texture = game.loader.get_texture('desert6.bmp')
     game.terrain.base_size = 368. * 2 / texture.size[0] # TODO: how Colobot/C++ handles this?
     game.terrain.load_from_relief(texture,
                                   height=factor * HEIGHT_CONST)
