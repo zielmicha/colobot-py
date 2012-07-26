@@ -1,0 +1,3 @@
+BUGS
+* check why textures sometimes disappear
+* check why Object.rotate_velocity doesn't work as expected

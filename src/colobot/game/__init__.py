@@ -50,8 +50,9 @@ class Game(object):
 
     def load_scene(self, name):
         import colobot.game.scene_file # TODO
-        file = self.loader.index[name]()
-        colobot.game.scene_file.load(file, self)
+        with self.global_lock:
+            file = self.loader.index[name]()
+            colobot.game.scene_file.load(file, self)
 
     def tick(self, time):
         with self.global_lock:
@@ -62,15 +63,15 @@ class Game(object):
         with self.global_lock:
             return list(self.objects)
 
-    def create_static_object(self, player_name, name):
+    def create_static_object(self, player_name, name, pos=None):
         # for debugging
         player = self.get_player(player_name)
         model = g3d.model.read(loader=self.loader, name=name).clone()
         obj = Object(self, model)
         obj.owner = player
-        obj.position = Vector3(120, 135 + self._static_num * 30, 210)
-        obj.velocity = Vector3(40, 0, 0)
+        obj.position = pos or Vector3(120, 135 + self._static_num * 30, 210)
         obj.rotation = Quaternion.new_rotate_axis(0, Vector3(0, 0, 1))
+        model.root.scale = 10
         self._static_num += 1
         self.add_object(obj)
 
@@ -127,7 +128,6 @@ class Object(object):
         self.position += self.velocity * time + (self.game.gravity * time ** 2) / 2
         self.velocity += self.game.gravity * time
 
-        self.calc_motor(time)
         self.check_ground(time)
 
     def calc_motor(self, time):
@@ -147,8 +147,9 @@ class Object(object):
             self.is_on_ground = True
             self.position.z = height
 
+            self.calc_motor(time)
             self.adjust_rotation(center, height)
-            self.rotate_velocity(center, height)
+            #self.rotate_velocity(center, height)
             self.apply_friction(time)
         else:
             if self.is_on_ground:

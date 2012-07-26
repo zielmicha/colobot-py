@@ -81,7 +81,6 @@ class UIWindow(object):
 class CameraDriver(g3d.camera_drivers.CameraDriver):
     def __init__(self, window, client):
         super(CameraDriver, self).__init__()
-        self.camera.up = Vector3(0, 0, 1)
         self.window = window
         self.client = client
         self._object = None
@@ -92,6 +91,7 @@ class CameraDriver(g3d.camera_drivers.CameraDriver):
 
         self.turn = 0
         self.direction = 0
+        self.fly = 0
         self._last_motor = Ellipsis
 
     def install(self, window):
@@ -100,12 +100,16 @@ class CameraDriver(g3d.camera_drivers.CameraDriver):
 
     def tick(self, delta):
         if not self._object:
-            if self.window.objects_by_id: # FIXME: race condition
-                self._get_next_object()
-            pass # top view
+            self._handle_top_keys()
         else:
             self._handle_keys()
             self._position_camera()
+
+    def _handle_top_keys(self):
+        speed = Vector3(self.direction, -self.turn, self.fly * 5)
+        self.camera.eye += speed * 0.4
+        self.camera.center = self.camera.eye - Vector3(0, 0, 1)
+        self.camera.up = Vector3(1, 0, 0)
 
     def _position_camera(self):
         heading, attitude, bank = self._object.root.rotation.get_euler()
@@ -114,6 +118,7 @@ class CameraDriver(g3d.camera_drivers.CameraDriver):
         vec = attitude_q * Vector3(1, 0, 0)
         self.camera.eye = self._object.root.pos - (
             vec * self.dist_behind) + Vector3(0, 0, self.dist_above)
+        self.camera.up = Vector3(0, 0, 1)
         self.camera.center = self._object.root.pos
 
     def _handle_keys(self):
@@ -147,12 +152,19 @@ class CameraDriver(g3d.camera_drivers.CameraDriver):
             self.turn = -1 if key == Keys.K_LEFT else 1
         elif key in (Keys.K_UP, Keys.K_DOWN):
             self.direction = -1 if key == Keys.K_DOWN else 1
+        elif key in (Keys.K_LSHIFT, Keys.K_LCTRL):
+            self.fly = -1 if key == Keys.K_LSHIFT else 1
+        elif key == Keys.K_ESCAPE:
+            self._object = None
 
     def key_up(self, key):
         if key in (Keys.K_LEFT, Keys.K_RIGHT):
             self.turn = 0
         elif key in (Keys.K_UP, Keys.K_DOWN):
             self.direction = 0
+        elif key in (Keys.K_LSHIFT, Keys.K_LCTRL):
+            self.fly = 0
+
 
     def _get_next_object(self):
         current = set(self.window.objects_by_id.values())

@@ -75,18 +75,15 @@ class Terrain(object):
         pos = pos + self.center
 
         x, y = pos
-        if x < 0 or y < 0:
-            raise IndexError(pos)
-        if y / self.base_size >= len(self.heights):
-            raise IndexError(pos)
-        if x / self.base_size >= len(self.heights[0]):
-            raise IndexError(pos)
 
         nx, ny = floor(x / self.base_size), floor(y / self.base_size)
-        a = _get(nx, ny)
-        b = _get(nx + 1, ny)
-        c = _get(nx, ny + 1)
-        d = _get(nx + 1, ny + 1)
+        try:
+            a = _get(nx, ny)
+            b = _get(nx + 1, ny)
+            c = _get(nx, ny + 1)
+            d = _get(nx + 1, ny + 1)
+        except IndexError:
+            return 0
         rx, ry = pos - Vector2(a.x, a.y)
 
         if rx + ry < 1:

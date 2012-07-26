@@ -25,10 +25,11 @@ def load(lines, game):
             method(game, **args)
 
 def handleTerrainRelief(game, image, factor):
-    HEIGHT_CONST = 20
+    HEIGHT_CONST = 80
     image = image.split('\\')[-1]
-    game.terrain.base_size = factor
-    game.terrain.load_from_relief(game.loader.get_texture(image),
+    texture = game.loader.get_texture(image)
+    game.terrain.base_size = 368. * 2 / texture.size[0] # TODO: how Colobot/C++ handles this?
+    game.terrain.load_from_relief(texture,
                                   height=factor * HEIGHT_CONST)
 
 def handleCreateObject(game, pos, dir, type, cmdline=None, script1=None,

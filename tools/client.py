@@ -34,6 +34,7 @@ if not client.authenticate_with_session():
     client.authenticate_and_save(login, password)
 
 def open_window(name):
+    global win
     win = colobot.client.ui.UIWindow(client, name)
     win.setup()
     win.loop()
