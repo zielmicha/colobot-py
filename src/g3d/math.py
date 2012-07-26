@@ -40,6 +40,13 @@ floor = int
 def ceil(i):
     return int(_ceil(i))
 
+def safe_asin(a):
+    if a > 1:
+        a = 1
+    elif a < -1:
+        a = -1
+    return asin(a)
+
 @g3d.serialize.serializable
 class Vector2(object):
     def __init__(self, x=0, y=0):
@@ -360,6 +367,17 @@ class Quaternion(object):
             heading = atan2(2*y*w-2*x*z, 1 - 2*sqy - 2*sqz)
             attitude = asin(2*test)
             bank = atan2(2*x*w-2*y*z, 1 - 2*sqx - 2*sqz)
+
+        if abs(heading) + 0.001 >= pi:
+            # Does it work?
+            heading += pi
+            bank += pi
+            attitude = pi - attitude
+
+        heading %= 2 * pi
+        bank %= 2 * pi
+        attitude %= 2 * pi
+
         return heading, attitude, bank
 
     @classmethod

@@ -23,12 +23,26 @@ class TestQuaternion(unittest.TestCase):
 
         self.assertAlmostEqual(q.get_angle_axis()[0], pi / 10)
 
+        q = Quaternion()
+        # rotate (21/20)*pi
+        for i in xrange(100):
+            q *= Quaternion.new_rotate_axis(pi / 40, Vector3(0, 0, 1))
+            print q.get_euler(), pi / 40 * (i + 1), q * Vector3(1, 0, 0)
+            self.assertAnglesEqual(q.get_euler()[1], pi / 40 * (i + 1))
+
+    def assertAnglesEqual(self, a, b):
+        delta = (a - b) % (2 * pi)
+        ellipsis = 0.00001
+        self.assertTrue(delta < ellipsis or (2 * pi - delta) < ellipsis,
+                        msg="%r doesn't equal %r" % (a, b))
+
     def test_get_angle_axis(self):
         l = [Quaternion(1, 1, 1, 1), Quaternion(5, 0, 0, 0),
              Quaternion.new_rotate_euler(pi / 2, 0, 0),
              Quaternion(0.1, 2, 3, 4), Quaternion(0.01, 1, 1, 0)]
         for i in xrange(100):
-            l.append(Quaternion(random.random(), random.random(), random.random(), random.random()))
+            l.append(Quaternion(random.random(), random.random(),
+                                random.random(), random.random()))
         for q in l:
             q = q.normalized()
             angle, axis = q.get_angle_axis()

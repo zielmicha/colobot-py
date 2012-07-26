@@ -1,3 +1,3 @@
 BUGS
-* check why textures sometimes disappear
+* make adjuest_rotation work
 * check why Object.rotate_velocity doesn't work as expected

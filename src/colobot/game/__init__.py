@@ -18,7 +18,7 @@ import g3d
 import g3d.model
 import g3d.terrain
 
-from g3d.math import Vector2, Vector3, Quaternion, atan, pi
+from g3d.math import Vector2, Vector3, Quaternion, atan, safe_asin, pi
 import g3d.serialize
 
 import threading
@@ -100,6 +100,7 @@ class Player(object):
 
 class Object(object):
     model_scale = 0.2
+    probe_len = 0.1
 
     def __init__(self, game, model):
         self.game = game
@@ -143,32 +144,30 @@ class Object(object):
         center = Vector2(self.position.x, self.position.y)
         height = self.game.terrain.get_height_at(center)
         if self.position.z <= height:
-            if not self.is_on_ground:
-                logging.debug('dups!')
             self.is_on_ground = True
             self.position.z = height
 
             self.calc_motor(time)
-            self.adjust_rotation(center, height)
-            self.rotate_velocity(center, height)
+            #self.adjust_rotation(center, height)
+            #self.rotate_velocity(center, height)
             self.apply_friction(time)
         else:
-            if self.is_on_ground:
-                logging.debug('up!')
             self.is_on_ground = False
 
     def adjust_rotation(self, center, height):
+        probe_len = 1#self.probe_len
         # y, z, x
         heading, attitude, bank = self.rotation.get_euler()
 
-        height_x = self.game.terrain.get_height_at(center + Vector2(1, 0))
-        heading = -atan(height_x - height)
+        height_x = self.game.terrain.get_height_at(center + Vector2(probe_len, 0))
+        heading = -safe_asin((height_x - height) / probe_len)
 
-        height_y = self.game.terrain.get_height_at(center + Vector2(0, 1))
-        bank = atan(height_y - height)
+        height_y = self.game.terrain.get_height_at(center + Vector2(0, probe_len))
+        bank = safe_asin((height_y - height) / probe_len)
 
         # TODO: use angular_velocity instead
-        d_rotation = Quaternion.new_rotate_euler(heading, attitude, bank)
+        d_rotation = Quaternion.new_rotate_euler(heading, 0, bank)
+        d_rotation *= Quaternion.new_rotate_euler(0, attitude, 0)
 
         self.rotation = d_rotation
 
@@ -213,7 +212,7 @@ class Terrain(g3d.terrain.Terrain):
         return abs(velocity) * 10 # arbitrary constant
 
     def get_angular_friction(self, pos, angular_velocity):
-        return 3 # arbitrary constant
+        return 10 # arbitrary constant
 
     # ----------------------
 

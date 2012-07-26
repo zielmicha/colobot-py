@@ -39,7 +39,7 @@ class Bot(colobot.game.Object):
     selectable = True
 
     mass = 1
-    motor_force = 30
+    motor_force = 50
     motor_radius = 0.5
 
 @register_object
