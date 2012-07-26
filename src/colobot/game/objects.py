@@ -35,6 +35,9 @@ class StaticObject(colobot.game.Object):
 class Building(StaticObject):
     selectable = True
 
+class Transportable(StaticObject):
+    selectable = False
+
 class Bot(colobot.game.Object):
     selectable = True
 
@@ -42,13 +45,19 @@ class Bot(colobot.game.Object):
     motor_force = 50
     motor_radius = 0.5
 
+# -----------------------------
+
 @register_object
 class WheeledGrabber(Bot):
     model = 'wheeled-transporter.model'
 
+# ---------------------------
+
 @register_object
 class Barrier1(StaticObject):
     model = 'barrier1.model'
+
+# ----------------------------
 
 @register_object
 class BotFactory(Building):
@@ -57,3 +66,21 @@ class BotFactory(Building):
 @register_object
 class ResearchCenter(Building):
     model = 'research.model'
+
+@register_object
+class Portico(Building):
+    model = 'portico.model'
+
+@register_object
+class Houston(Building):
+    model = 'houston.model'
+
+# --------------------------
+
+@register_object
+class Titanium(Transportable):
+    model = 'titanium.model'
+
+@register_object
+class PowerCell(Transportable):
+    model = 'power-cell.model'

@@ -1,0 +1,23 @@
+group rotate=90,0,0
+      part model=portico1.mod
+
+      group translate=0,67,0 # 1
+             part model=portico2.mod
+             group translate=0,0,-33 rotate=0,45,0 # 2
+                   part model=portico3.mod
+                   group translate=50,0,0 rotate=0,-60,0 # 3
+                         part model=portico4.mod
+                         part model=portico5.mod translate=35,0,0 rotate=0,-55,0 # 4
+             group translate=0,0,33 rotate=0,-45,0 # 5
+                   part model=portico3.mod
+                   group translate=50,0,0 rotate=0,60,0 # 6
+                         part model=portico4.mod
+                         part model=portico5.mod translate=35,0,0 rotate=0,55,0 # 7
+
+      group translate=-35,50,-35 scale=2 # 8
+            part model=portico6.mod
+            part model=portico7.mod translate=0,4.5,1.9 # 9
+
+      group translate=-35,50,35 rotate=0,-180,0 scale=2 # 10
+            part model=portico6.mod
+            part model=portico7.mod translate=0,4.5,1.9 # 11

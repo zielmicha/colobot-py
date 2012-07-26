@@ -1,0 +1,5 @@
+group rotate=90,0,0
+      part model=huston1.mod
+      group translate=0,39,30 rotate=0,-180,0 scale=3
+            part model=huston2.mod
+            part model=huston3.mod translate=0,4.5,1.9
