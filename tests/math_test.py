@@ -15,6 +15,26 @@ class TestQuaternion(unittest.TestCase):
         self.assertAlmostEqual(Quaternion(1, 1, 1, 1).__abs__(), 2)
         self.assertAlmostEqual(Quaternion(5, 0, 0, 0).__abs__(), 5)
 
+    def test_if_quaternions_behave_as_they_should(self):
+        q = Quaternion()
+        # rotate (21/20)*pi
+        for i in xrange(21):
+            q *= Quaternion.new_rotate_axis(pi / 10, Vector3(0, 0, 1))
+
+        self.assertAlmostEqual(q.get_angle_axis()[0], pi / 10)
+
+    def test_get_angle_axis(self):
+        l = [Quaternion(1, 1, 1, 1), Quaternion(5, 0, 0, 0),
+             Quaternion.new_rotate_euler(pi / 2, 0, 0),
+             Quaternion(0.1, 2, 3, 4), Quaternion(0.01, 1, 1, 0)]
+        for i in xrange(100):
+            l.append(Quaternion(random.random(), random.random(), random.random(), random.random()))
+        for q in l:
+            q = q.normalized()
+            angle, axis = q.get_angle_axis()
+            q2 = q.new_rotate_axis(angle, axis)
+            self.assertQuaternionEqual(q2, q)
+
     def test_power(self):
         l = [Quaternion(1, 1, 1, 1), Quaternion(5, 0, 0, 0),
              Quaternion.new_rotate_euler(pi / 2, 0, 0),

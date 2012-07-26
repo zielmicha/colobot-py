@@ -83,8 +83,8 @@ class CameraDriver(g3d.camera_drivers.CameraDriver):
         self._object = None
         self._ordered_objects = []
 
-        self.dist_behind = 12
-        self.dist_above = 6
+        self.dist_behind = 36
+        self.dist_above = 18
 
         self.turn = 0
         self.direction = 0
@@ -136,9 +136,9 @@ class CameraDriver(g3d.camera_drivers.CameraDriver):
                 return self.direction, self.direction
         else:
             if self.turn == -1:
-                return 0, 1
+                return -1, 1
             elif self.turn == 1:
-                return 1, 0
+                return 1, -1
             else:
                 return 0, 0
 

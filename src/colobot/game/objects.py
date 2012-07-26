@@ -29,6 +29,6 @@ def register_object(clazz):
 class WheeledGrabber(colobot.game.Object):
     model = 'wheeled-transporter.model'
 
-@register_object
+#@register_object
 class Barrier1(colobot.game.Object):
     model = 'barrier1.model'

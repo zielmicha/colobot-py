@@ -33,8 +33,6 @@ import g3d
 
 class Loader(object):
     def __init__(self, enable_textures=True):
-        if enable_textures:
-            import g3d.gl
         self.enable_textures = enable_textures
         self.index = {}
         self.texture_cache = {}

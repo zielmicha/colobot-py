@@ -220,12 +220,18 @@ class Quaternion(object):
                 tmp[3], tmp[7], tmp[11], tmp[15]]
 
     def get_angle_axis(self):
+        # vec[z] >= 0
         q = self.normalized()
         angle1 = 2 * acos(q.w)
         angle2 = (1 - q.w ** 2) ** 0.5
         if angle2 < 0.001:
             return 0, Vector3(1, 0, 0)
-        return angle1, Vector3(q.x / angle2, q.y / angle2, q.z / angle2)
+        vec = Vector3(q.x / angle2, q.y / angle2, q.z / angle2)
+        if vec.z < 0:
+            vec *= -1
+            angle1 *= -1
+            angle1 %= 2 * pi
+        return angle1, vec
 
     @classmethod
     def from_vector3(self, vec):
@@ -271,7 +277,22 @@ class Quaternion(object):
                 +self.x * other.y - self.y * other.x
                 +self.z * other.w + self.w * other.z)
         elif isinstance(other, Vector3):
-            return (self * Quaternion.from_vector3(other)).to_vector3()
+            w, x, y, z = self
+            X, Y, Z = other
+            return Vector3(w * w * X + 2 * y * w * Z -
+                           2 * z * w * Y + x * x * X +
+                           2 * y * x * Y + 2 * z * x * Z -
+                           z * z * X - y * y * X,
+
+                           2 * x * y * X + y * y * Y +
+                           2 * z * y * Z + 2 * w * z * X -
+                           z * z * Y + w * w * Y -
+                           2 * x * w * Z - x * x * Y,
+
+                           2 * x * z * X + 2 * y * z * Y +
+                           z * z * Z - 2 * w * y * X -
+                           y * y * Z + 2 * w * x * Y -
+                           x * x * Z + w * w * Z)
         elif isinstance(other, (float, int, long)):
             return Quaternion(self.w * other,
                               self.x * other,
@@ -291,7 +312,7 @@ class Quaternion(object):
 
     def __pow__(self, exp):
         if (self.x ** 2 + self.y ** 2 + self.z ** 2) < 0.001:
-            return self.w ** exp
+            return Quaternion(self.w ** exp)
         return (self.ln() * exp).exp()
 
     def exp(self):

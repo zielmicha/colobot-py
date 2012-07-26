@@ -116,18 +116,18 @@ class Object(object):
         self.mass = 1
 
         self.motor = (0, 0)
-        self.motor_force = 0.001
+        self.motor_force = 30
         # motor_radius ~ torque
-        self.motor_radius = 5
+        self.motor_radius = 0.5
 
     def tick(self, time):
         if abs(self.angular_velocity) > 0.001:
-            q = Quaternion.new_rotate_axis(abs(self.angular_velocity) * 0.01,
+            q = Quaternion.new_rotate_axis(abs(self.angular_velocity) * time,
                                        self.angular_velocity.normalized())
         else:
             q = Quaternion()
         self.rotation *= q
-        self.rotation = self.rotation.normalized()
+        self.rotation = Quaternion.new_rotate_axis(*self.rotation.get_angle_axis())
         self.position += self.velocity * time + (self.game.gravity * time ** 2) / 2
         self.velocity += self.game.gravity * time
 
@@ -135,11 +135,11 @@ class Object(object):
 
     def calc_motor(self, time):
         f0, f1 = self.motor
-        f = f0 + f1 # net force
-        m = (f1 - f0) * self.motor_radius # torque
-        self.velocity += self.rotation * Vector3(f / self.mass, 0, 0)
+        f = (f0 + f1) * self.motor_force # net force
+        m = (f1 - f0) * self.motor_force * self.motor_radius # torque
+        self.velocity += self.rotation * Vector3(f / self.mass * time, 0, 0)
         j = self.mass # moment of intertia
-        self.angular_velocity += (m / j) *  Vector3(0, 0, 1)
+        self.angular_velocity += (m / j * time) *  Vector3(0, 0, 1)
 
     def check_ground(self, time):
         center = Vector2(self.position.x, self.position.y)
@@ -152,7 +152,7 @@ class Object(object):
 
             self.calc_motor(time)
             self.adjust_rotation(center, height)
-            #self.rotate_velocity(center, height)
+            self.rotate_velocity(center, height)
             self.apply_friction(time)
         else:
             if self.is_on_ground:
@@ -212,10 +212,10 @@ class Terrain(g3d.terrain.Terrain):
 
     def get_kinetic_friction(self, pos, velocity):
         ' Returns value of linear deacceleration caused by friction. '
-        return abs(velocity) * 30 # arbitrary constant
+        return abs(velocity) * 10 # arbitrary constant
 
     def get_angular_friction(self, pos, angular_velocity):
-        return 20 # arbitrary constant
+        return 3 # arbitrary constant
 
     # ----------------------
 
