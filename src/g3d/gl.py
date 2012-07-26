@@ -34,6 +34,7 @@ from OpenGL.GL import *
 import numpy
 import pygame
 import time
+import logging
 
 MODULE_SERIAL_ID = 3
 
@@ -129,9 +130,6 @@ class Window:
         glLightfv(GL_LIGHT0, GL_POSITION, (20, 20, 20, 1))
 
         glEnable(GL_TEXTURE_2D)
-        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-        glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL)
 
         self.camera._setup()
         self._draw_obj(self.root)
@@ -230,10 +228,17 @@ class TrianglesRenderer:
             return acum
 
         self._grouped_by_texture = []
+        logging.debug('TrianglesRenderer')
         for texture, triangles in grouped_by_texture:
-            vertices = numpy.array(sum_seq([ [t.a[:], t.b[:], t.c[:]] for t in triangles ]))
-            normals = numpy.array(sum_seq([ [t.na[:], t.nb[:], t.nc[:]] for t in triangles ]))
-            uv = numpy.array(sum_seq([ [t.a_uv[:], t.b_uv[:], t.c_uv[:]] for t in triangles ]))
+            logging.debug('\t texture: %s triangles: %s',
+                          texture.size if texture else None,
+                          len(triangles))
+            vertices = numpy.array(sum_seq([ [t.a[:], t.b[:], t.c[:]]
+                                             for t in triangles ]))
+            normals = numpy.array(sum_seq([ [t.na[:], t.nb[:], t.nc[:]]
+                                            for t in triangles ]))
+            uv = numpy.array(sum_seq([ [t.a_uv[:], t.b_uv[:], t.c_uv[:]]
+                                       for t in triangles ]))
             assert len(vertices) == len(normals) == len(uv)
             self._grouped_by_texture.append((texture, normals, vertices, uv))
 
@@ -244,7 +249,11 @@ class TrianglesRenderer:
 
         for texture, normal, vertex, uv in self._grouped_by_texture:
             if g3d.options.enable_textures and texture:
-                glBindTexture(GL_TEXTURE_2D, get_texture_id(texture))
+                id = get_texture_id(texture)
+                glBindTexture(GL_TEXTURE_2D, id)
+                glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+                glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+                glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL)
             else:
                 glBindTexture(GL_TEXTURE_2D, 0)
 
